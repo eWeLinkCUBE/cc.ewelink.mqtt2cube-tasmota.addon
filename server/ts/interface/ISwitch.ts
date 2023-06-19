@@ -1,5 +1,6 @@
+import EDeviceType from "../enum/EDeviceType"
 
-type ICapability = IToggleCapability | INormalCapability
+export type ICapability = IToggleCapability | INormalCapability
 
 interface IToggleCapability {
     capability: "toggle",
@@ -12,7 +13,7 @@ interface INormalCapability {
     permission: "read" | "readWrite"
 }
 
-interface IState {
+export interface IState {
     power: {
         powerState: "on" | "off"
     },
@@ -25,11 +26,11 @@ interface IState {
 
 export interface ISwitch {
     /** 类别 */
-    display_category: "switch";
+    display_category: EDeviceType.SWITCH;
     /** 设备名称 tasmota_config.dn*/
     name: string;
     /** 能力 */
-    capability: ICapability[],
+    capabilities: ICapability[],
     /** 状态 */
     state: IState,
     /** mac地址 tasmota_config.mac */

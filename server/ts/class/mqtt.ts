@@ -41,75 +41,72 @@ const connectOption: IClientOptions = {
 };
 
 const mqttTopicParser = {
-    isStorageAvailablity(topic = '') {
-        let topicComopents = topic.split('/');
-        return topicComopents[0] === MQTT_STORAGE_BASE_TOPIC
-            && topicComopents[1] === 'system'
-            && topicComopents[3] === 'availability';
-    },
-
-    isStorageInformation(topic = '') {
-        let topicComopents = topic.split('/');
-        return topicComopents[0] === MQTT_STORAGE_BASE_TOPIC
-            && topicComopents[1] === 'device'
-            && topicComopents[3] === 'information';
+    isDiscoveryMsg(topic = '') {
+        let topicComponents = topic.split('/');
+        return topicComponents[0] === 'tasmota'
+            && topicComponents[1] === 'discovery'
+            && topicComponents[3] === 'config';
     },
 
     isStorageUpdatedState(topic = '') {
-        let topicComopents = topic.split('/');
-        return topicComopents[0] === MQTT_STORAGE_BASE_TOPIC
-            && topicComopents[1] === 'device'
-            && topicComopents[3] === 'updated'
-            && topicComopents[4] === 'state';
+        let topicComponents = topic.split('/');
+        return topicComponents[0] === MQTT_STORAGE_BASE_TOPIC
+            && topicComponents[1] === 'device'
+            && topicComponents[3] === 'updated'
+            && topicComponents[4] === 'state';
     },
 
     isStorageFormatResult(topic = '') {
-        let topicComopents = topic.split('/');
-        return topicComopents[0] === MQTT_STORAGE_BASE_TOPIC
-            && topicComopents[1] === 'device'
-            && topicComopents[3] === 'updated'
-            && topicComopents[4] === 'format';
+        let topicComponents = topic.split('/');
+        return topicComponents[0] === MQTT_STORAGE_BASE_TOPIC
+            && topicComponents[1] === 'device'
+            && topicComponents[3] === 'updated'
+            && topicComponents[4] === 'format';
     },
 
     isStorageDiscovered(topic = '') {
-        let topicComopents = topic.split('/');
-        return topicComopents[0] === MQTT_STORAGE_BASE_TOPIC
-            && topicComopents[1] === 'system'
-            && topicComopents[2] === 'discovered';
+        let topicComponents = topic.split('/');
+        return topicComponents[0] === MQTT_STORAGE_BASE_TOPIC
+            && topicComponents[1] === 'system'
+            && topicComponents[2] === 'discovered';
     },
 
     isStorageDeleted(topic = '') {
-        let topicComopents = topic.split('/');
-        return topicComopents[0] === MQTT_STORAGE_BASE_TOPIC
-            && topicComopents[1] === 'device'
-            && topicComopents[3] === 'deleted';
+        let topicComponents = topic.split('/');
+        return topicComponents[0] === MQTT_STORAGE_BASE_TOPIC
+            && topicComponents[1] === 'device'
+            && topicComponents[3] === 'deleted';
     },
 
     isSystemLogUpdate(topic = '') {
-        let topicComopents = topic.split('/');
-        return topicComopents[0] === MQTT_HOST_BASE_TOPIC
-            && topicComopents[1] === 'system'
-            && topicComopents[2] === 'log'
-            && topicComopents[3] === 'update';
+        let topicComponents = topic.split('/');
+        return topicComponents[0] === MQTT_HOST_BASE_TOPIC
+            && topicComponents[1] === 'system'
+            && topicComponents[2] === 'log'
+            && topicComponents[3] === 'update';
     },
 
     isBridgeAccesstoken(topic = '') {
-        let topicComopents = topic.split('/');
-        return topicComopents[0] === 'bridge'
-            && topicComopents[1] === 'updated'
-            && topicComopents[2] === 'access_token';
+        let topicComponents = topic.split('/');
+        return topicComponents[0] === 'bridge'
+            && topicComponents[1] === 'updated'
+            && topicComponents[2] === 'access_token';
     },
 
     // bridge/updated/time_zone
     isBridgeTimezone(topic = "") {
-        let topicComopents = topic.split('/');
-        return topicComopents[0] === 'bridge'
-            && topicComopents[1] === 'updated'
-            && topicComopents[2] === 'time_zone';
+        let topicComponents = topic.split('/');
+        return topicComponents[0] === 'bridge'
+            && topicComponents[1] === 'updated'
+            && topicComponents[2] === 'time_zone';
     }
 };
 
 
+/**
+ * @description MQTT初始化及管理方法
+ * @class MQTT
+ */
 class MQTT {
     initParams: IMqttParams;
     connectionTimer: NodeJS.Timer | null;
@@ -180,10 +177,8 @@ class MQTT {
         logger.info('[mqtt] Connected to MQTT server');
         // await this.publishStateOnline();
 
-        /**
-         * 订阅storage的功能主题
-         */
-        // this.subscribe(`storage/system/availability`);
+        // 订阅
+        this.subscribe(`tasmota/discovery/#`);
         // this.subscribe(`storage/system/discovered`);
         // this.subscribe(`storage/device/#`);
         /**
@@ -209,7 +204,7 @@ class MQTT {
             return;
         };
         const truePayload = payload.toString();
-        logger.info(`onmessage <========== `, topic, truePayload, payload.length);
+        logger.info(`[mqtt] onMessage params`, topic, truePayload, payload.length);
         const eventData = {
             topic,
             data: {},
@@ -218,9 +213,16 @@ class MQTT {
 
         try {
             eventData.data = payload.length && JSON.parse(truePayload);
+            logger.info(`[mqtt] onMessage params`, JSON.stringify(eventData));
         } catch (error) {
+            logger.error(`[mqtt] onMessage parse error => ${error}`)
             return;
         }
+
+        if(mqttTopicParser.isDiscoveryMsg(topic)) {
+            
+        }
+
 
         // if (mqttTopicParser.isStorageAvailablity(topic)) this.eventBus.emitStorageAvailablity(eventData);
         // else if (mqttTopicParser.isStorageInformation(topic)) this.eventBus.emitStorageInformation(eventData);
@@ -246,7 +248,8 @@ class MQTT {
     //     );
     // }
 
-    subscribe(topic: string, opt: IClientSubscribeOptions) {
+    subscribe(topic: string, opt?: IClientSubscribeOptions) {
+        logger.info(`[mqtt] subscribe topic ${topic} ${opt ? 'with option' + opt : ''}`)
         opt = Object.assign({}, { qos: 2, rap: true }, opt);
         this.client!.subscribe(topic, opt);
     }

@@ -6,13 +6,9 @@ import KeyV from 'keyv';
 import { KeyvFile } from 'keyv-file';
 import encryption from './encryption';
 import { ServerSentEvent } from '../ts/class/srcSse';
+import { IMqttParams } from '../ts/interface/IMqtt';
 
 let store: KeyV | null = null;
-
-/** 是否上锁 */
-let lock = false;
-/** 当前锁的 ID */
-let lockId: string | null = null;
 
 /**
  * 程序等待 ms 的时间
@@ -27,94 +23,6 @@ export function wait(ms: number) {
     });
 }
 
-/**
- * 加锁参数
- *
- * @param retryCount 重试次数
- */
-export interface AcquireLockParams {
-    retryCount: number;
-}
-
-/**
- * 加锁，加锁成功返回当前锁的 ID，否则返回 null
- *
- * @param params 加锁参数
- */
-export async function acquireLock(params: AcquireLockParams) {
-    const retryCount = params.retryCount || 20;
-    let step = 100;
-
-    logger.info(`(acquireLock) retryCount: ${retryCount}`);
-
-    for (let i = 0; i < retryCount; i++) {
-        if (lock) {
-            logger.info(`(acquireLock) i: ${i}, step: ${step}`);
-            // 当前锁被占用
-            await wait(step);
-            if (step < 10000) {
-                step *= 2;
-            }
-        } else {
-            // 锁未被占用
-            const curLockId = uuidv4();
-            lock = true;
-            lockId = curLockId;
-            logger.info(`(acquireLock) i: ${i}, lockId: ${curLockId}`);
-            return lockId;
-        }
-    }
-
-    return null;
-}
-
-/**
- * 解锁参数
- *
- * @param lockId 当前锁的 ID
- * @param retryCount 重试次数
- */
-export interface ReleaseLockParams {
-    lockId: string;
-    retryCount: number;
-}
-
-/**
- * 解锁，解锁成功返回 true，否则返回 false
- *
- * @param params 解锁参数
- */
-export async function releaseLock(params: ReleaseLockParams) {
-    const curLockId = params.lockId;
-    const retryCount = params.retryCount || 20;
-    let step = 100;
-
-    logger.info(`(releaseLock) curLockId: ${curLockId}`);
-    logger.info(`(releaseLock) retryCount: ${retryCount}`);
-
-    if (!curLockId) {
-        return false;
-    }
-
-    for (let i = 0; i < retryCount; i++) {
-        if (lock && lockId === curLockId) {
-            logger.info(`(releaseLock) unlock i: ${i}`);
-            // 尝试解锁成功
-            lock = false;
-            lockId = null;
-            return true;
-        } else {
-            logger.info(`(releaseLock) i: ${i}, step: ${step}`);
-            // 尝试解锁失败
-            await wait(step);
-            if (step < 10000) {
-                step *= 2;
-            }
-        }
-    }
-
-    return false;
-}
 
 export async function initDb(filename: string, isDbFileExist: boolean) {
     // create store object
@@ -152,59 +60,13 @@ export async function initDb(filename: string, isDbFileExist: boolean) {
 
 type DbKey = keyof IDbData;
 
-/**
- * 网关信息项目
- */
-export interface IGatewayInfoItem {
-    /** mac地址 */
-    mac: string;
-    /** ip地址 */
-    ip: string;
-    /** 名称 */
-    name: string;
-    /** 域名 */
-    domain: string;
-    /** 凭证 */
-    token: string;
-    /** 获取凭证时间起点 */
-    ts: string;
-    /** ip是否有效 */
-    ipValid: boolean;
-    /** 凭证是否有效 */
-    tokenValid: boolean;
-    /** 网关设备id */
-    deviceId?: string;
-}
-
-/**
- * 网关设备数据
- */
-export interface IDeviceItem {
-    /** 设备名称 */
-    name: string;
-    /** 设备id */
-    id: string;
-    /** 设备来源，此处为网关的mac地址 */
-    from: string;
-    /** 设备是否已同步 */
-    isSynced: boolean;
-    /** 设备是否被支持 */
-    isSupported: boolean;
-}
-
 interface IDbData {
-    /** 是否自动 */
-    autoSync: boolean;
-    /** 目标网关的信息 */
-    destGatewayInfo: null | IGatewayInfoItem;
-    /** 来源网关的信息列表 */
-    srcGatewayInfoList: IGatewayInfoItem[];
+    /** mqtt配置信息 */
+    mqttSetting: null | IMqttParams;
 }
 
 export const dbDataTmp: IDbData = {
-    autoSync: true,
-    destGatewayInfo: null,
-    srcGatewayInfoList: [],
+    mqttSetting: null,
 };
 
 /** 获取所有数据 */
@@ -232,18 +94,14 @@ async function clearStore() {
 }
 
 /** 设置指定的数据库数据 */
-async function setDbValue(key: 'autoSync', v: IDbData['autoSync']): Promise<void>;
-async function setDbValue(key: 'destGatewayInfo', v: IDbData['destGatewayInfo']): Promise<void>;
-async function setDbValue(key: 'srcGatewayInfoList', v: IDbData['srcGatewayInfoList']): Promise<void>;
+async function setDbValue(key: 'mqttSetting', v: IDbData['mqttSetting']): Promise<void>;
 async function setDbValue(key: DbKey, v: IDbData[DbKey]) {
     if (!store) return;
     await store.set(key, v);
 }
 
 /** 获取指定的数据库数据 */
-async function getDbValue(key: 'autoSync'): Promise<IDbData['autoSync']>;
-async function getDbValue(key: 'destGatewayInfo'): Promise<IDbData['destGatewayInfo']>;
-async function getDbValue(key: 'srcGatewayInfoList'): Promise<IDbData['srcGatewayInfoList']>;
+async function getDbValue(key: 'mqttSetting'): Promise<IDbData['mqttSetting']>;
 async function getDbValue(key: DbKey) {
     if (!store) return null;
     const res = await store.get(key);
