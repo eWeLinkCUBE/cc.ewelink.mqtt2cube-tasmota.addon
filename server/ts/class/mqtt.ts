@@ -1,21 +1,17 @@
-import mqtt, { IClientOptions } from 'mqtt';
+import mqtt, { IClientOptions, IPublishPacket, IClientSubscribeOptions } from 'mqtt';
 import logger from '../../log';
+import { IMqttParams } from '../interface/IMqtt';
 
 
-const MQTT_BROKER_URL = process.env.MQTT_BROKER_URL ?? 'mqtt://localhost';
 const MQTT_BROKER_KEEPALIVE = process.env.env === 'dev' ? 5 : 60;
 
 const MQTT_HOST_BASE_TOPIC = 'docker';
 const MQTT_HOST_CLIENT_ID = 'tasmota-add-on';
-const MQTT_HOST_USERNAME = "";
-const MQTT_HOST_PASSWORD = "";
 
 const MQTT_STORAGE_BASE_TOPIC = 'storage';
 
-const CONNECT_OPTION: IClientOptions = {
+const connectOption: IClientOptions = {
     clientId: MQTT_HOST_CLIENT_ID,
-    username: MQTT_HOST_USERNAME,
-    password: MQTT_HOST_PASSWORD,
     keepalive: MQTT_BROKER_KEEPALIVE,
     clean: true,
     protocolId: 'MQTT',
@@ -115,40 +111,43 @@ const mqttTopicParser = {
 
 
 class MQTT {
+    initParams: IMqttParams;
     connectionTimer: NodeJS.Timer | null;
     publishedTopics: Set<string>;
-    client = Client | null;
+    client: mqtt.MqttClient | null;
+    cache: any;
 
-
-
-
-    constructor() {
+    constructor(initParams: IMqttParams) {
+        this.initParams = initParams;
         this.connectionTimer = null;
         this.publishedTopics = new Set();
         this.client = null;
-        this.lastSeq = -1;
         this.cache = {};
     }
 
     async connect() {
-        logger.info(`[mqtt] Connecting to MQTT server at ${MQTT_BROKER_URL}`);
+        const { username = "", pwd = "", host, port } = this.initParams
+        const mqttUrl = `mqtt://${host}` ?? 'mqtt://localhost';
+        logger.info(`[mqtt] Connecting to MQTT server at ${mqttUrl}`);
         let hasInit = false;
 
         return new Promise((resolve, reject) => {
-            this.client = mqtt.connect(MQTT_BROKER_URL, CONNECT_OPTION);
-            // https://github.com/Koenkk/zigbee2mqtt/issues/9822
-            this.client.stream.setMaxListeners(0);
+            if (username && pwd) {
+                connectOption.username = username;
+                connectOption.password = pwd;
+            }
+            logger.info(`[mqtt] connect option => ${JSON.stringify(connectOption)}`)
+            this.client = mqtt.connect(mqttUrl, connectOption);
+            this.client.setMaxListeners(0);
 
             const onConnect = this.#onConnect.bind(this);
             this.client.on('connect', async () => {
                 await onConnect();
                 hasInit = true;
-                resolve();
+                resolve(true);
             });
 
             this.client.on('error', (err) => {
-                logger.error(`[mqtt] MQTT error: ${err.message}`);
-
                 if (hasInit === true) {
                     reject(err);
                 }
@@ -159,7 +158,7 @@ class MQTT {
     }
 
     disconnect() {
-        return this.client.end(true);
+        return this.client!.end(true);
     }
 
     isConnected() {
@@ -168,31 +167,34 @@ class MQTT {
 
     async #onConnect() {
         // Set timer at interval to check if connected to MQTT server.
-        clearTimeout(this.connectionTimer);
+        if (this.connectionTimer) {
+            clearTimeout(this.connectionTimer);
+        }
+
         this.connectionTimer = setInterval(() => {
-            if (this.client.reconnecting) {
+            if (this.client!.reconnecting) {
                 logger.error('[mqtt] Not connected to MQTT server!');
             }
         }, 10 * 1000);
 
         logger.info('[mqtt] Connected to MQTT server');
-        await this.publishStateOnline();
+        // await this.publishStateOnline();
 
         /**
          * 订阅storage的功能主题
          */
-        this.subscribe(`storage/system/availability`);
-        this.subscribe(`storage/system/discovered`);
-        this.subscribe(`storage/device/#`);
+        // this.subscribe(`storage/system/availability`);
+        // this.subscribe(`storage/system/discovered`);
+        // this.subscribe(`storage/device/#`);
         /**
          * 订阅bridge功能
          */
-        this.subscribe(`bridge/updated/access_token`);
-        this.subscribe(`bridge/updated/time_zone`);
+        // this.subscribe(`bridge/updated/access_token`);
+        // this.subscribe(`bridge/updated/time_zone`);
         /**
          * 订阅日志功能
          */
-        this.subscribe(`docker/system/log/update/#`);
+        // this.subscribe(`docker/system/log/update/#`);
     }
 
     /**
@@ -201,9 +203,13 @@ class MQTT {
      * @param {mqtt.IPublishPacket} packet 
      * @returns 
      */
-    onMessage(topic, payload, packet) {
-        if (this.publishedTopics.has(topic)) return;
-        logger.info(`onmessage <========== `, topic, payload.toString(), payload.length);
+    onMessage(topic: string, payload: Buffer, packet: IPublishPacket) {
+        if (this.publishedTopics.has(topic)) {
+            logger.error("[mqtt] receive same topic as I send it => ", topic, this.publishedTopics);
+            return;
+        };
+        const truePayload = payload.toString();
+        logger.info(`onmessage <========== `, topic, truePayload, payload.length);
         const eventData = {
             topic,
             data: {},
@@ -211,45 +217,38 @@ class MQTT {
         };
 
         try {
-            eventData.data = payload.length && JSON.parse(payload);
+            eventData.data = payload.length && JSON.parse(truePayload);
         } catch (error) {
-            logger.error(`onMessage parse payload error: ${topic} ${payload} ${error}`);
             return;
         }
 
-        if (mqttTopicParser.isStorageAvailablity(topic)) this.eventBus.emitStorageAvailablity(eventData);
-        else if (mqttTopicParser.isStorageInformation(topic)) this.eventBus.emitStorageInformation(eventData);
-        else if (mqttTopicParser.isStorageUpdatedState(topic)) this.eventBus.emitStorageUpdatedState(eventData);
-        else if (mqttTopicParser.isStorageFormatResult(topic)) this.eventBus.emitStorageFormatResult(eventData);
-        else if (mqttTopicParser.isStorageDiscovered(topic)) this.eventBus.emitStorageDiscovered(eventData);
-        else if (mqttTopicParser.isStorageDeleted(topic)) this.eventBus.emitStorageDeleted(eventData);
-        else if (mqttTopicParser.isSystemLogUpdate(topic)) this.eventBus.emitSystemLogUpdate(eventData);
-        else if (mqttTopicParser.isBridgeAccesstoken(topic)) {
-            this.cache.tokenInfo = eventData?.data;
-            this.eventBus.emitBridgeUpdatedAccesstoken(eventData);
-        } else if (mqttTopicParser.isBridgeTimezone(topic)) {
-            this.cache.timezoneInfo = eventData?.data;
-            this.eventBus.emitSystemTimeZoneUpdate(eventData);
-        }
+        // if (mqttTopicParser.isStorageAvailablity(topic)) this.eventBus.emitStorageAvailablity(eventData);
+        // else if (mqttTopicParser.isStorageInformation(topic)) this.eventBus.emitStorageInformation(eventData);
+        // else if (mqttTopicParser.isStorageUpdatedState(topic)) this.eventBus.emitStorageUpdatedState(eventData);
+        // else if (mqttTopicParser.isStorageFormatResult(topic)) this.eventBus.emitStorageFormatResult(eventData);
+        // else if (mqttTopicParser.isStorageDiscovered(topic)) this.eventBus.emitStorageDiscovered(eventData);
+        // else if (mqttTopicParser.isStorageDeleted(topic)) this.eventBus.emitStorageDeleted(eventData);
+        // else if (mqttTopicParser.isSystemLogUpdate(topic)) this.eventBus.emitSystemLogUpdate(eventData);
+        // else if (mqttTopicParser.isBridgeAccesstoken(topic)) {
+        //     this.cache.tokenInfo = eventData?.data;
+        //     this.eventBus.emitBridgeUpdatedAccesstoken(eventData);
+        // } else if (mqttTopicParser.isBridgeTimezone(topic)) {
+        //     this.cache.timezoneInfo = eventData?.data;
+        //     this.eventBus.emitSystemTimeZoneUpdate(eventData);
+        // }
     }
 
-    async publishStateOnline() {
-        await this.publish(
-            `${MQTT_HOST_BASE_TOPIC}/system/availability`,
-            JSON.stringify({ online: true }),
-            { retain: true, qos: 2 }
-        );
-    }
+    // async publishStateOnline() {
+    //     await this.publish(
+    //         `${MQTT_HOST_BASE_TOPIC}/system/availability`,
+    //         JSON.stringify({ online: true }),
+    //         { retain: true, qos: 2 }
+    //     );
+    // }
 
-    getSeq() {
-        const curTs = Date.now();
-        this.lastSeq = this.lastSeq === curTs ? curTs + 1 : curTs;
-        return this.lastSeq;
-    }
-
-    subscribe(topic, opt) {
+    subscribe(topic: string, opt: IClientSubscribeOptions) {
         opt = Object.assign({}, { qos: 2, rap: true }, opt);
-        this.client.subscribe(topic, opt);
+        this.client!.subscribe(topic, opt);
     }
 
     /**
@@ -259,41 +258,37 @@ class MQTT {
      * @param {mqtt.IClientPublishOptions} options 
      * @returns 
      */
-    async publish(topic, payload, options = {}) {
+    async publish(topic: string, payload: Buffer, options = {}) {
+        let sendPayload: Buffer | string = payload;
         const defaultOptions = {
             qos: 1,
-            retain: false,
-            properties: {
-                userProperties: {
-                    reqClientId: MQTT_HOST_CLIENT_ID,
-                    reqSequence: this.getSeq()
-                }
-            }
+            retain: false
         };
         if (!this.isConnected()) {
             logger.error(`Not connected to MQTT server!`);
-            logger.error(`Cannot send message: topic: '${topic}', payload: '${payload}`);
             return;
         }
 
         this.publishedTopics.add(topic);
 
-        const actualOptions = { ...defaultOptions, ...options };
-        if (typeof payload === 'object') payload = JSON.stringify(payload);
+        const actualOptions = { ...defaultOptions, ...options } as IClientSubscribeOptions;
+        if (typeof payload === 'object') {
+            sendPayload = JSON.stringify(payload);
+        };
 
-        logger.info(`publish ==========> `, topic, payload);
+        logger.info(`publish ==========> `, topic, sendPayload, actualOptions);
 
         return new Promise((resolve, reject) => {
-            this.client.publish(
+            this.client!.publish(
                 topic,
-                payload,
+                sendPayload,
                 actualOptions,
                 (error) => {
                     if (error) {
                         logger.error(`publish ${topic} error, message is "${error}", opt is ${JSON.stringify(actualOptions)}`);
-                        reject();
+                        reject(0);
                     } else {
-                        resolve();
+                        resolve(1);
                     }
                 });
         });
