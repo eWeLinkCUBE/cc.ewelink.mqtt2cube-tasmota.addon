@@ -12,7 +12,7 @@ export const prodConf = {
         appSecret: 'gHDu79PCw*yR%wtfmy5YUzo!yknm74xz',
     },
     iHost: {
-        ip: 'ihost',
+        api: 'http://ihost/open-api/v1/rest',
     },
     log: {
         path: 'log/logFile/total_prod.log',

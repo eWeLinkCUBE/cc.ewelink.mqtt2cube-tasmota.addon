@@ -107,7 +107,7 @@ const mqttTopicParser = {
  * @description MQTT初始化及管理方法
  * @class MQTT
  */
-class MQTT {
+export default class MQTT {
     initParams: IMqttParams;
     connectionTimer: NodeJS.Timer | null;
     publishedTopics: Set<string>;
@@ -297,5 +297,3 @@ class MQTT {
         });
     }
 }
-
-module.exports = MQTT;

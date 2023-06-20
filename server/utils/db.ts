@@ -63,10 +63,16 @@ type DbKey = keyof IDbData;
 interface IDbData {
     /** mqtt配置信息 */
     mqttSetting: null | IMqttParams;
+    /** iHost 凭证 */
+    iHostToken: string;
+    /** 是否开启自动同步 */
+    autoSync: boolean;
 }
 
 export const dbDataTmp: IDbData = {
     mqttSetting: null,
+    iHostToken: "",
+    autoSync: true
 };
 
 /** 获取所有数据 */
@@ -95,6 +101,8 @@ async function clearStore() {
 
 /** 设置指定的数据库数据 */
 async function setDbValue(key: 'mqttSetting', v: IDbData['mqttSetting']): Promise<void>;
+async function setDbValue(key: 'autoSync', v: IDbData['autoSync']): Promise<void>;
+async function setDbValue(key: 'iHostToken', v: IDbData['iHostToken']): Promise<void>;
 async function setDbValue(key: DbKey, v: IDbData[DbKey]) {
     if (!store) return;
     await store.set(key, v);
@@ -102,6 +110,8 @@ async function setDbValue(key: DbKey, v: IDbData[DbKey]) {
 
 /** 获取指定的数据库数据 */
 async function getDbValue(key: 'mqttSetting'): Promise<IDbData['mqttSetting']>;
+async function getDbValue(key: 'autoSync'): Promise<IDbData['autoSync']>;
+async function getDbValue(key: 'iHostToken'): Promise<IDbData['iHostToken']>;
 async function getDbValue(key: DbKey) {
     if (!store) return null;
     const res = await store.get(key);

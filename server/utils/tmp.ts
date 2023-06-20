@@ -8,7 +8,6 @@ export type TDeviceSettingList = Array<TDeviceSetting>;
 /** 设备配置信息缓存 */
 let deviceSettingList: TDeviceSettingList = [];
 
-
 /**
  * @description 更新设设备配置列表
  * @param {TDeviceSettingList} deviceSettingList

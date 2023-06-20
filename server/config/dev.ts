@@ -12,7 +12,7 @@ export const devConf = {
         appSecret: 'gHDu79PCw*yR%wtfmy5YUzo!yknm74xz',
     },
     iHost: {
-        ip: '192.168.31.214',
+        api: 'http://192.168.31.171/open-api/v1/rest',
     },
     log: {
         path: 'log/logFile/total_dev.log',

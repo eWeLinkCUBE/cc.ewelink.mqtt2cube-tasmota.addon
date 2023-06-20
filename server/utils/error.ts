@@ -11,69 +11,23 @@ const ERROR_LIST = [
         errMsg: 'Internel Error'    // 服务端内部错误
     },
     {
-        errCode: 501,
-        errMsg: 'No such gateway'   // 无相应的网关信息 DEP
-    },
-    {
-        errCode: 502,
-        errMsg: 'Gateway IP invalid'    // 请求网关的 IP 无效 DEP
-    },
-    {
-        errCode: 503,
-        errMsg: 'Gateway token invalid'    // 请求网关的凭证无效 DEP
-    },
-    {
-        errCode: 504,
-        errMsg: 'DB lock busy'    // 数据库锁繁忙 DEP
-    },
-    {
-        errCode: 600,
-        errMsg: 'eWeLink Cube API - getDeviceList error: token invalid'    // eWeLink Cube API 获取设备列表凭证无效
-    },
-    {
         errCode: 601,
-        errMsg: 'eWeLink Cube API - getDeviceList error: timeout'    // eWeLink Cube API 获取设备列表请求超时
+        errMsg: 'iHost no response'    // iHost unreachable
     },
     {
         errCode: 602,
-        errMsg: 'eWeLink Cube API - syncDevice error: token invalid'    // eWeLink Cube API 添加第三方设备凭证无效
+        errMsg: 'token invalid'    // iHost 凭证无效
     },
     {
-        errCode: 603,
-        errMsg: 'eWeLink Cube API - syncDevice error: timeout'    // eWeLink Cube API 添加第三方设备请求超时
+        errCode: 1201,
+        errMsg: 'IP can not connect',   // IP 地址无法连接
     },
     {
-        errCode: 604,
-        errMsg: 'eWeLink Cube API - syncDevice error: params invalid'    // eWeLink Cube API 添加第三方设备参数错误
+        errCode: 1202,
+        errMsg: 'IP can not connect',   // IP 地址无法连接
     },
-    {
-        errCode: 605,
-        errMsg: 'eWeLink Cube API - getGatewayToken error: token invalid'    // eWeLink Cube API 获取网关凭证无效
-    },
-    {
-        errCode: 606,
-        errMsg: 'eWeLink Cube API - deleteDevice error: token invalid'    // eWeLink Cube API 删除设备凭证无效
-    },
-    {
-        errCode: 607,
-        errMsg: 'eWeLink Cube API - deleteDevice error: timeout'    // eWeLink Cube API 删除设备请求超时
-    },
-    {
-        errCode: 608,
-        errMsg: 'eWeLink Cube API - deleteDevice error: device not found'    // eWeLink Cube API 删除设备不存在
-    },
-    {
-        errCode: 701,
-        errMsg: 'No dest gateway info'    // 无同步目标网关的信息
-    },
-    {
-        errCode: 702,
-        errMsg: 'Dest gateway IP invalid'    // 同步目标网关的 IP 不可用
-    },
-    {
-        errCode: 703,
-        errMsg: 'Dest gateway token invalid'    // 同步目标网关的凭证不可用
-    },
+
+
     {
         errCode: 1101,
         errMsg: 'IP can not connect',   // IP 地址无法连接

@@ -130,7 +130,6 @@ function getSwitchSetting(discovery: IDiscoveryMsg): ISwitch {
 }
 
 
-
 /**
  * @description 根据fullTopic获取对应topic
  * @param {IDiscoveryMsg} discovery
@@ -177,13 +176,12 @@ function getTopicTelemetry(discovery: IDiscoveryMsg): string {
 }
 
 
-
 /**
  * @description 获取上下线topic
  * @param {IDiscoveryMsg} discovery
- * @returns {*} 
+ * @returns {*}  {string}
  */
-function getTopicTelemetryWill(discovery: IDiscoveryMsg) {
+function getTopicTelemetryWill(discovery: IDiscoveryMsg): string {
     return getTopicTelemetry(discovery) + 'LWT';
 }
 
@@ -191,9 +189,9 @@ function getTopicTelemetryWill(discovery: IDiscoveryMsg) {
 /**
  * @description 获取设备state topic
  * @param {IDiscoveryMsg} discovery
- * @returns {*} 
+ * @returns {*}  {string}
  */
-function getTopicCommandState(discovery: IDiscoveryMsg) {
+function getTopicCommandState(discovery: IDiscoveryMsg): string {
     return getTopicCommand(discovery) + 'STATE';
 }
 
@@ -201,9 +199,9 @@ function getTopicCommandState(discovery: IDiscoveryMsg) {
 /**
  * @description 获取指令结果 result topic
  * @param {IDiscoveryMsg} discovery
- * @returns {*} 
+ * @returns {*}  {string}
  */
-function getTopiCommandResult(discovery: IDiscoveryMsg) {
+function getTopiCommandResult(discovery: IDiscoveryMsg): string {
     return getTopicState(discovery) + 'RESULT';
 }
 
@@ -211,9 +209,9 @@ function getTopiCommandResult(discovery: IDiscoveryMsg) {
 /**
  * @description 获取 power off 的值
  * @param {IDiscoveryMsg} discovery
- * @returns {*} 
+ * @returns {*}  {string}
  */
-function getStatePowerOff(discovery: IDiscoveryMsg) {
+function getStatePowerOff(discovery: IDiscoveryMsg): string {
     return discovery['state'][0];
 }
 
@@ -221,9 +219,9 @@ function getStatePowerOff(discovery: IDiscoveryMsg) {
 /**
  * @description 获取 power on 的值
  * @param {IDiscoveryMsg} discovery
- * @returns {*} 
+ * @returns {*}  {string}
  */
-function getStatePowerOn(discovery: IDiscoveryMsg) {
+function getStatePowerOn(discovery: IDiscoveryMsg): string {
     return discovery['state'][1];
 }
 
@@ -231,9 +229,9 @@ function getStatePowerOn(discovery: IDiscoveryMsg) {
 /**
  * @description 获取设备的上报 state topic
  * @param {IDiscoveryMsg} discovery
- * @returns {*} 
+ * @returns {*}  {string}
  */
-function getTopicTelemetryState(discovery: IDiscoveryMsg) {
+function getTopicTelemetryState(discovery: IDiscoveryMsg): string {
     return getTopicTelemetry(discovery) + 'STATE';
 }
 

@@ -1,5 +1,5 @@
-export default interface IResponse {
+export default interface IResponse<T> {
     error: number,
     msg?: string,
-    data?: any
+    data?: T
 }

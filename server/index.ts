@@ -8,10 +8,7 @@ import { internalError, notFound } from './middleware/error';
 import config from './config';
 import { initDb } from './utils/db';
 import oauth from './middleware/oauth';
-import { checkDestGateway } from './middleware/checkDestGateway';
 import _ from 'lodash';
-import sseUtils from './utils/sseUtils';
-import mDns from './utils/initMDns';
 
 const app = express();
 const port = config.nodeApp.port;
@@ -46,7 +43,7 @@ app.use(info);
 app.use(oauth);
 
 // 检查同步目标网关有效性
-app.use(checkDestGateway);
+// app.use(checkDestGateway);
 
 // 路由处理
 app.use('/api/v1', router);
@@ -58,14 +55,8 @@ app.use(internalError);
 app.listen(port, '0.0.0.0', async () => {
     // 初始化数据库
     await initDb(dbPath, isDbFileExist);
-    //启动时，扫描一下局域网设备，防止网关ip变了没更新
-    mDns.query({
-        questions: [
-            {
-                name: '_ewelink._tcp.local',
-                type: 'PTR',
-            },
-        ],
-    });
+
+    
+
     logger.info(`Server is running at http://localhost:${port}----env: ${config.nodeApp.env}----version: v${config.nodeApp.version}`);
 });

@@ -4,6 +4,10 @@ import { TDeviceSetting, TDeviceSettingList, getDeviceSettingList, updateDeviceS
 import ERelayType from '../ts/enum/ERelayType';
 import EDeviceType from '../ts/enum/EDeviceType';
 import { DEVICE_SETTINGS } from './generateDeviceSetting';
+import { deleteDevice, getIHostSyncDeviceList } from '../cube-api/api';
+import logger from '../log';
+import { TAG_DATA_NAME } from '../const';
+import mqtt from './mqtt';
 
 
 /** relay与类型的映射 */
@@ -38,12 +42,50 @@ function analyzeDiscovery(discovery: IDiscoveryMsg): TDeviceSetting {
  * @param {TDeviceSetting} oldSetting
  * @returns {*}  {TDeviceSetting}
  */
-function compareSetting(newSetting: TDeviceSetting, oldSetting: TDeviceSetting): TDeviceSetting {
-    
+async function compareSetting(newSetting: TDeviceSetting, oldSetting: TDeviceSetting): Promise<TDeviceSetting> {
+    // 1. 获取iHost设备列表
+    const res = await getIHostSyncDeviceList();
+    if (res.error !== 0) {
+        logger.error(`[compareSetting] get iHost sync device list error => ${JSON.stringify(res)}`);
+        return newSetting;
+    }
+    const deviceList = res.data!.device_list;
+
+    // 2. 判断设备是否已经同步
+    const curDevice = deviceList.find(device => {
+        const data = _.get(device, ['tags', TAG_DATA_NAME]);
+        if (!data) return false;
+        return data.deviceId === newSetting.mac;
+    })
+
+    // 3. 没有同步则直接替换
+    if (!curDevice) {
+        return newSetting;
+    }
+
+    // 4. 已同步则比较类型有无变化
+    const isCategoryChanged = newSetting.display_category !== oldSetting.display_category;
+
+    // 5. 类型已经发生变化则做对应处理
+    if (isCategoryChanged) {
+        // 类型变为 notSupported 则将设备取消同步
+        if (newSetting.display_category === EDeviceType.NOT_SUPPORTED) {
+            logger.info(`[compareSetting] device ${newSetting.mac} has change from ${oldSetting.display_category} to ${newSetting.display_category}`);
+            const res = await deleteDevice(curDevice.serial_number);
+            logger.info(`[compareSetting] delete device id ${curDevice.serial_number} result => ${JSON.stringify(res)}`);
+            return newSetting;
+        }
+
+        // 从一种类型变为另一种类型的处理，目前只支持switch，所以暂时不需要处理
+    }
+
+    // 6. 类型没有变化则直接更新
+    mqtt.resubscribeMQTTTopic(newSetting, oldSetting);
+    return newSetting;
 }
 
 
-export function initByDiscoveryMsg(payload: IDiscoveryMsg) {
+export async function initByDiscoveryMsg(payload: IDiscoveryMsg) {
     const { mac } = payload;
 
     const deviceSettingList = getDeviceSettingList();
@@ -62,7 +104,7 @@ export function initByDiscoveryMsg(payload: IDiscoveryMsg) {
     }
 
     // 4. 缓存如果存在，对比缓存中哪些东西产生了变化
-    const newDeviceSetting = compareSetting(curDeviceSetting, deviceSettingList[deviceSettingIdx]);
+    const newDeviceSetting = await compareSetting(curDeviceSetting, deviceSettingList[deviceSettingIdx]);
 
     // 5. 将最终生成的新setting更新回去
     deviceSettingList[deviceSettingIdx] = newDeviceSetting;
