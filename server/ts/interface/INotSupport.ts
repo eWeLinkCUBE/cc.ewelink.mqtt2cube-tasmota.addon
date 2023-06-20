@@ -2,9 +2,13 @@ import EDeviceType from "../enum/EDeviceType";
 
 export interface INotSupport {
     /** 类别 */
-    display_category: EDeviceType.NOT_SUPPORTED;
+    display_category: EDeviceType.UNKNOWN;
     /** 设备名称 tasmota_config.dn*/
     name: string;
+    /** 在线离线状态 */
+    online: boolean;
+    /** model */
+    model: string,
     /** mac地址 tasmota_config.mac */
     mac: string;
     /** 在线离线状态topic LWT-TOPIC-BY-CONFIG */

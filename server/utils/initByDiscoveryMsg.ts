@@ -15,8 +15,6 @@ const RELAY_MAPPING = {
     [ERelayType.SWITCH]: EDeviceType.SWITCH
 }
 
-
-
 /**
  * @description 解析discovery信息
  * @param {IDiscoveryMsg} discovery
@@ -26,7 +24,7 @@ function analyzeDiscovery(discovery: IDiscoveryMsg): TDeviceSetting {
     const { rl } = discovery;
 
     // 1.判断rl第一个即为1的则为switch设备，其余为不支持
-    const type = _.get(RELAY_MAPPING, rl[0], EDeviceType.NOT_SUPPORTED);
+    const type = _.get(RELAY_MAPPING, rl[0], EDeviceType.UNKNOWN);
 
     // 2.根据类型获取生成方法
     const func = DEVICE_SETTINGS[type];
@@ -68,8 +66,8 @@ async function compareSetting(newSetting: TDeviceSetting, oldSetting: TDeviceSet
 
     // 5. 类型已经发生变化则做对应处理
     if (isCategoryChanged) {
-        // 类型变为 notSupported 则将设备取消同步
-        if (newSetting.display_category === EDeviceType.NOT_SUPPORTED) {
+        // 类型变为 unknown 则将设备取消同步
+        if (newSetting.display_category === EDeviceType.UNKNOWN) {
             logger.info(`[compareSetting] device ${newSetting.mac} has change from ${oldSetting.display_category} to ${newSetting.display_category}`);
             const res = await deleteDevice(curDevice.serial_number);
             logger.info(`[compareSetting] delete device id ${curDevice.serial_number} result => ${JSON.stringify(res)}`);
@@ -80,6 +78,7 @@ async function compareSetting(newSetting: TDeviceSetting, oldSetting: TDeviceSet
     }
 
     // 6. 类型没有变化则直接更新
+    // TODO 完善MQTT TOPIC 方法
     mqtt.resubscribeMQTTTopic(newSetting, oldSetting);
     return newSetting;
 }

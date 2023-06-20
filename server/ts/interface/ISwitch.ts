@@ -33,6 +33,10 @@ export interface ISwitch {
     capabilities: ICapability[],
     /** 状态 */
     state: IState,
+    /** 在线离线状态 */
+    online: boolean,
+    /** model */
+    model: string,
     /** mac地址 tasmota_config.mac */
     mac: string;
     /** 查询状态topic COMMAND-FOR_STATE-TOPIC-BY-CONFIG eg: cmnd/tasmota_plug/STATE*/

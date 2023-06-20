@@ -1,6 +1,6 @@
 enum EDeviceType {
     SWITCH = 'switch',
-    NOT_SUPPORTED = 'notSupported'
+    UNKNOWN = 'unknown'
 }
 
 export default EDeviceType;

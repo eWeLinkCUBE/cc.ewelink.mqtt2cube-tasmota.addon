@@ -8,13 +8,13 @@ import { ICapability, IState, ISwitch } from "../ts/interface/ISwitch"
 
 interface IDeviceSetting {
     [EDeviceType.SWITCH]: (discovery: IDiscoveryMsg) => ISwitch,
-    [EDeviceType.NOT_SUPPORTED]: (discovery: IDiscoveryMsg) => INotSupport,
+    [EDeviceType.UNKNOWN]: (discovery: IDiscoveryMsg) => INotSupport,
 }
 
 
 export const DEVICE_SETTINGS: IDeviceSetting = {
     [EDeviceType.SWITCH]: getSwitchSetting,
-    [EDeviceType.NOT_SUPPORTED]: getNotSupportDeviceSetting
+    [EDeviceType.UNKNOWN]: getNotSupportDeviceSetting
 }
 
 
@@ -25,11 +25,13 @@ export const DEVICE_SETTINGS: IDeviceSetting = {
  * @returns {*}  {INotSupport}
  */
 function getNotSupportDeviceSetting(discovery: IDiscoveryMsg): INotSupport {
-    const { dn, mac, sw } = discovery;
+    const { dn, mac, sw, md } = discovery;
     const notSupportSetting: INotSupport = {
-        display_category: EDeviceType.NOT_SUPPORTED,
+        display_category: EDeviceType.UNKNOWN,
         name: dn,
         mac: mac,
+        online: false,
+        model: md,
         availability_topic: getTopicTelemetryWill(discovery),
         availability_offline: discovery['ofln'],
         availability_online: discovery['onln'],
@@ -46,7 +48,7 @@ function getNotSupportDeviceSetting(discovery: IDiscoveryMsg): INotSupport {
  * @returns {*}  {ISwitch}
  */
 function getSwitchSetting(discovery: IDiscoveryMsg): ISwitch {
-    const { rl, mac, fn, dn, ofln, onln, sw } = discovery;
+    const { rl, mac, fn, dn, ofln, onln, sw, md } = discovery;
 
     /** 通道数量 */
     let channelNum = 0;
@@ -111,6 +113,8 @@ function getSwitchSetting(discovery: IDiscoveryMsg): ISwitch {
         name: dn,
         capabilities,
         state,
+        online: false,
+        model: md,
         mac,
         poll_topic: getTopicCommandState(discovery),
         availability_topic: getTopicTelemetryWill(discovery),

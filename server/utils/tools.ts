@@ -1,5 +1,4 @@
 import _ from 'lodash';
-import { GatewayDeviceItem } from "../ts/interface/CubeApi";
 import ping from 'ping';
 import logger from '../log';
 
@@ -18,7 +17,6 @@ function sleep(time: number) {
 }
 
 
-
 /**
  * @description 判断该ip是否还存活
  * @param {string} ip
@@ -28,33 +26,6 @@ async function isIpAlive(ip: string): Promise<boolean> {
     const res = await ping.promise.probe(ip);
     logger.debug(`ping ${ip} result ${JSON.stringify(res)}`);
     return res.alive;
-}
-
-/**
- * 获取多通道设备的通道数
- *
- * @param device 设备数据
- */
-export function getSwitchChannelNum(device: GatewayDeviceItem) {
-    let channelNum = 0;
-    const displayCategory = _.get(device, 'display_category');
-    const capaList = _.get(device, 'capabilities');
-    if (displayCategory === 'switch' || displayCategory === 'plug') {
-        let toggleNum = 0;
-        let powerCapa = false;
-        for (const capa of capaList) {
-            if (capa.capability === 'power') {
-                powerCapa = true;
-            } else if (capa.capability === 'toggle') {
-                toggleNum++;
-            }
-        }
-
-        if (powerCapa) {
-            channelNum = toggleNum;
-        }
-    }
-    return channelNum;
 }
 
 

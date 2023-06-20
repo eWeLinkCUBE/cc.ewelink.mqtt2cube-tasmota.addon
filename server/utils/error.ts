@@ -19,12 +19,20 @@ const ERROR_LIST = [
         errMsg: 'token invalid'    // iHost 凭证无效
     },
     {
+        errCode: 1001,
+        errMsg: 'mqtt setting is invalid',   // mqtt配置有误
+    },
+    {
         errCode: 1201,
         errMsg: 'IP can not connect',   // IP 地址无法连接
     },
     {
-        errCode: 1202,
-        errMsg: 'IP can not connect',   // IP 地址无法连接
+        errCode: 1301,
+        errMsg: 'device id invalid',   // 设备id无效
+    },
+    {
+        errCode: 1302,
+        errMsg: 'unknown device is not allowed to sync',   // 不支持设备不允许同步
     },
 
 

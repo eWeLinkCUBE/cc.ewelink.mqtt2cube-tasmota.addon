@@ -1,3 +1,4 @@
+import _ from 'lodash';
 import { Request, Response } from 'express';
 import { toResponse } from '../utils/error';
 import logger from '../log';
@@ -13,7 +14,24 @@ import db from '../utils/db';
  */
 export default async function getMQTTBroker(req: Request, res: Response) {
     try {
-        return res.json(toResponse(0));
+        const mqttSetting = await db.getDbValue('mqttSetting');
+
+        if (!mqttSetting) {
+            logger.error(`[getMQTTBroker] mqttSetting is not properly initiate! ${mqttSetting}`);
+            return res.json(toResponse(500));
+        }
+        const { username, pwd, host, port } = mqttSetting;
+        logger.debug(`[getMQTTBroker] current mqttSetting is ${JSON.stringify(mqttSetting)}`);
+
+        if (!host || !port) {
+            return res.json(toResponse(0));
+        }
+
+        if (!username && !pwd) {
+            return res.json(toResponse(0, 'success', _.omit(mqttSetting, 'username', 'pwd')));
+        }
+
+        return res.json(toResponse(0, 'success', mqttSetting));
     } catch (error: any) {
         logger.error(`get MQTT Broker error----------------: ${error.message}`);
         res.json(toResponse(500));

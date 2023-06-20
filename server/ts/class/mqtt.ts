@@ -1,6 +1,8 @@
 import mqtt, { IClientOptions, IPublishPacket, IClientSubscribeOptions } from 'mqtt';
 import logger from '../../log';
 import { IMqttParams } from '../interface/IMqtt';
+import db from '../../utils/db';
+
 
 
 const MQTT_BROKER_KEEPALIVE = process.env.env === 'dev' ? 5 : 60;
@@ -107,7 +109,7 @@ const mqttTopicParser = {
  * @description MQTT初始化及管理方法
  * @class MQTT
  */
-export default class MQTT {
+class MQTT {
     initParams: IMqttParams;
     connectionTimer: NodeJS.Timer | null;
     publishedTopics: Set<string>;
@@ -141,7 +143,7 @@ export default class MQTT {
             this.client.on('connect', async () => {
                 await onConnect();
                 hasInit = true;
-                resolve(true);
+                resolve(1);
             });
 
             this.client.on('error', (err) => {
@@ -174,6 +176,7 @@ export default class MQTT {
             }
         }, 10 * 1000);
 
+        await db.setDbValue('mqttSetting', this.initParams);
         logger.info('[mqtt] Connected to MQTT server');
         // await this.publishStateOnline();
 
@@ -219,8 +222,8 @@ export default class MQTT {
             return;
         }
 
-        if(mqttTopicParser.isDiscoveryMsg(topic)) {
-            
+        if (mqttTopicParser.isDiscoveryMsg(topic)) {
+
         }
 
 
@@ -297,3 +300,17 @@ export default class MQTT {
         });
     }
 }
+
+let mqttClient: null | MQTT = null;
+export async function initMqtt(initParams: IMqttParams) {
+    const newMqttClient = new MQTT(initParams);
+    const res = await newMqttClient.connect();
+    if (res !== 1) {
+        return false;
+    }
+
+    mqttClient = newMqttClient;
+    return true;
+}
+
+export default mqttClient;
