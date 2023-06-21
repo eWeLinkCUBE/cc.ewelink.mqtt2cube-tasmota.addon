@@ -30,12 +30,14 @@ export default async function syncAllDevices(req: Request, res: Response) {
         }
         const deviceList = result.data!.device_list;
 
-
         // 剔除掉所有unknown设备以及已同步的设备
         const syncDevice = deviceSettingList.filter(setting => {
             if (checkTasmotaDeviceInIHost(deviceList, setting.mac)) return false;
             if (setting.display_category === EDeviceType.UNKNOWN) return false;
+            return true;
         })
+
+        logger.info(`[syncAllDevices] syncDevice => ${JSON.stringify(syncDevice)}`)
 
         // 生成请求参数
         const params = generateIHostDevice(syncDevice);
@@ -43,17 +45,17 @@ export default async function syncAllDevices(req: Request, res: Response) {
         // 开始同步
         const syncRes = await syncDeviceToIHost(params);
         if (!syncRes) {
-            logger.error('[syncDevices] sync device to iHost fail----------------------');
+            logger.error('[syncAllDevices] sync device to iHost fail----------------------');
             return res.json(toResponse(500));
         }
 
         if (syncRes?.payload.description === 'headers.Authorization is invalid') {
-            logger.info('[syncDevices] sync iHost device,iHost token useless');
+            logger.info('[syncAllDevices] sync iHost device,iHost token useless');
             return res.json(toResponse(602));
         }
 
         if (syncRes?.payload.type === 'INVALID_PARAMETERS') {
-            logger.error(`[syncDevices] sync device to iHost error params------------------ ${JSON.stringify(params)} ${syncRes.payload}`);
+            logger.error(`[syncAllDevices] sync device to iHost error params------------------ ${JSON.stringify(params)} ${JSON.stringify(syncRes)}`);
             //参数错误
             return res.json(toResponse(500));
         }

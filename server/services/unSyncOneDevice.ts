@@ -16,7 +16,7 @@ export default async function unSyncOneDevice(req: Request, res: Response) {
     try {
 
         /** 将要被取消同步的设备 ID */
-        const willUnSyncDeviceId = req.params.deviceId;
+        const willUnSyncDeviceId = req.params.mac;
         /** 设备数据 */
         const deviceSettingList = getDeviceSettingList();
 

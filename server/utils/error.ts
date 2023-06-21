@@ -31,6 +31,10 @@ const ERROR_LIST = [
         errMsg: 'unknown device is not allowed to sync',   // 不支持设备不允许同步
     },
     {
+        errCode: 1701,
+        errMsg: 'no token yet',   // 还未获取到凭证
+    },
+    {
         errCode: 1801,
         errMsg: 'device id invalid',   // 该设备不存在
     },

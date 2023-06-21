@@ -35,6 +35,8 @@ export interface ISwitch {
     state: IState,
     /** 在线离线状态 */
     online: boolean,
+    /** 设备同步的tags */
+    tags: any,
     /** model */
     model: string,
     /** mac地址 tasmota_config.mac */

@@ -11,6 +11,7 @@ import unSyncOneDevice from '../services/unSyncOneDevice';
 import getDeviceList from '../services/getDeviceList';
 import getAutoSyncStatus from '../services/getAutoSyncStatus';
 import changeAutoSyncStatus from '../services/changeAutoSyncStatus';
+import getIHostToken from '../services/getIHostToken';
 
 import unsyncOneDeviceSchema from '../schema/unsyncOneDevice';
 import getGatewayTokenSchema from '../schema/getGatewayToken';
@@ -27,12 +28,13 @@ const router = express.Router();
 
 router.get(EApiPath.GET_MQTT_BROKER, checkSchema({}), getMQTTBroker);
 router.post(EApiPath.SET_MQTT_BROKER, checkSchema({}), setMQTTBroker);
-router.get(EApiPath.GET_DEVICE_LIST, checkSchema(getGatewayTokenSchema), validate, getDeviceList);
+router.get(EApiPath.GET_DEVICE_LIST, checkSchema({}), validate, getDeviceList);
 router.put(EApiPath.SYNC_ALL_DEVICES, checkSchema({}), syncAllDevices);
 router.put(EApiPath.SYNC_ONE_DEVICE, checkSchema({}), syncOneDevice);
 router.put(EApiPath.UN_SYNC_ONE_DEVICE, checkSchema({}), unSyncOneDevice);
-router.put(EApiPath.GET_AUTO_SYNC_STATUS, checkSchema({}), getAutoSyncStatus);
+router.get(EApiPath.GET_AUTO_SYNC_STATUS, checkSchema({}), getAutoSyncStatus);
 router.put(EApiPath.CHANGE_AUTO_SYNC_STATUS, checkSchema({}), changeAutoSyncStatus);
+router.get(EApiPath.GET_IHOST_TOKEN, checkSchema({}), getIHostToken);
 
 // 开放接口路由
 router.post(EApiPath.OPEN_CONTROL_DEVICE, checkSchema(syncOneDeviceSchema), validate, openControlDevice);

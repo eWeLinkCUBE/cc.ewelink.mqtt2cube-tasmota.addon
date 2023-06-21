@@ -43,7 +43,7 @@ export function generateIHostDevice(settingList: TDeviceSetting[]) {
     for (const deviceSetting of settingList) {
         if (deviceSetting.display_category === EDeviceType.UNKNOWN) continue;
 
-        const { name, mac, model, sw_version, display_category, capabilities, state } = deviceSetting;
+        const { name, mac, model, sw_version, display_category, capabilities, state, tags } = deviceSetting;
         const syncDevice = {
             name: name,
             third_serial_number: mac,
@@ -53,11 +53,7 @@ export function generateIHostDevice(settingList: TDeviceSetting[]) {
             display_category: display_category,
             capabilities: capabilities,
             state: state,
-            tags: {
-                [TAG_DATA_NAME]: {
-                    deviceId: mac,
-                }
-            },
+            tags,
             service_address: createDeviceServiceAddr(mac),
         }
 
@@ -126,7 +122,7 @@ export default async function syncOneDevice(req: Request, res: Response) {
         }
 
         if (syncRes?.payload.type === 'INVALID_PARAMETERS') {
-            logger.error(`[syncDevices] sync device to iHost error params------------------ ${JSON.stringify(params)} ${syncRes.payload}`);
+            logger.error(`[syncDevices] sync device to iHost error params------------------ ${JSON.stringify(params)} ${JSON.stringify(syncRes)}`);
             //参数错误
             return res.json(toResponse(500));
         }

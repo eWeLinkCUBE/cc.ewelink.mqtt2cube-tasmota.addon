@@ -5,6 +5,7 @@ import ERelayType from "../ts/enum/ERelayType";
 import { IDiscoveryMsg } from "../ts/interface/IDiscoveryMsg";
 import { INotSupport } from "../ts/interface/INotSupport";
 import { ICapability, IState, ISwitch } from "../ts/interface/ISwitch"
+import { TAG_DATA_NAME } from '../const';
 
 interface IDeviceSetting {
     [EDeviceType.SWITCH]: (discovery: IDiscoveryMsg) => ISwitch,
@@ -65,6 +66,11 @@ function getSwitchSetting(discovery: IDiscoveryMsg): ISwitch {
             powerState: "off"
         }
     }
+    let tags: any = {
+        [TAG_DATA_NAME]: {
+            deviceId: mac,
+        }
+    }
 
 
     // 1.判断设备有几个通道
@@ -80,29 +86,53 @@ function getSwitchSetting(discovery: IDiscoveryMsg): ISwitch {
 
     // 生成多通道的能力与状态
     if (channelNum > 1) {
-        for (let channel = 1; channel <= channelNum; channel++) {
+        for (let channel = 0; channel < channelNum; channel++) {
 
             let name = fn[channel];
+            const curChannel = channel + 1;
 
             if (!name) {
-                name = `${dn} switch ${channelNum}`;
+                name = `${dn} switch ${curChannel}`;
             }
 
             // 添加能力
             capabilities.push({
                 capability: 'toggle',
                 permission: 'readWrite',
-                name
+                name: `${curChannel}`
             });
 
             // 添加状态
-            _.assign(state, {
-                toggle: {
-                    [channelNum]: {
+            if (!state.toggle) {
+                _.assign(state, {
+                    toggle: {
+                        [curChannel]: {
+                            toggleState: 'off'
+                        }
+                    }
+                })
+            } else {
+                _.assign(state.toggle, {
+                    [curChannel]: {
                         toggleState: 'off'
                     }
-                }
-            })
+                })
+            }
+
+            if (!tags.toggle) {
+                _.assign(tags, {
+                    toggle: {
+                        [curChannel]: name
+                    }
+                })
+            } else {
+                _.assign(tags.toggle, {
+                    [curChannel]: name
+                })
+            }
+
+
+            logger.info(`[getSwitchSetting] current ${curChannel} state is ${JSON.stringify(state)}`)
         }
     }
 
@@ -113,6 +143,7 @@ function getSwitchSetting(discovery: IDiscoveryMsg): ISwitch {
         name: dn,
         capabilities,
         state,
+        tags,
         online: false,
         model: md,
         mac,

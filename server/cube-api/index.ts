@@ -20,25 +20,11 @@ const iHostAxiosInstance = axios.create({
 });
 
 // 请求拦截器，在请求发出之前添加 Authorization 请求头
-iHostAxiosInstance.interceptors.request.use((request: any) => {
+iHostAxiosInstance.interceptors.request.use(async (request: any) => {
     // 白名单请求路径，不需要添加 Authorization 请求头
     const whitelist = ['/bridge/access_token'];
 
-    const at = db.getDbValue('iHostToken');
-
-    if (request.headers && whitelist.indexOf(request.url as string) < 0) {
-        request.headers['Authorization'] = at ? `Bearer ${at}` : '';
-    }
-
-    return request;
-});
-
-// 请求拦截器，在请求发出之前添加 Authorization 请求头
-iHostAxiosInstance.interceptors.request.use((request: any) => {
-    // 白名单请求路径，不需要添加 Authorization 请求头
-    const whitelist = ['/bridge/access_token'];
-
-    const at = db.getDbValue('iHostToken');
+    const at = await db.getDbValue('iHostToken');
 
     if (request.headers && whitelist.indexOf(request.url as string) < 0) {
         request.headers['Authorization'] = at ? `Bearer ${at}` : '';

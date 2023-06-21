@@ -30,6 +30,7 @@ interface IDeviceInfo {
 export default async function getDeviceList(req: Request, res: Response) {
     try {
         const deviceRes = await getIHostSyncDeviceList();
+        logger.debug(`[getDeviceList] get device list res => ${JSON.stringify(deviceRes)}`)
         if (deviceRes.error === 401) {
             logger.error(`[getDeviceList] iHost token invalid`)
             return res.json(toResponse(602));

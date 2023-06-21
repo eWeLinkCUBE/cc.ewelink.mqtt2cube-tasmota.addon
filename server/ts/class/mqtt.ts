@@ -2,6 +2,8 @@ import mqtt, { IClientOptions, IPublishPacket, IClientSubscribeOptions } from 'm
 import logger from '../../log';
 import { IMqttParams } from '../interface/IMqtt';
 import db from '../../utils/db';
+import { initByDiscoveryMsg } from '../../utils/initByDiscoveryMsg';
+import { IDiscoveryMsg } from '../interface/IDiscoveryMsg';
 
 
 
@@ -201,7 +203,7 @@ class MQTT {
      * @param {mqtt.IPublishPacket} packet 
      * @returns 
      */
-    onMessage(topic: string, payload: Buffer, packet: IPublishPacket) {
+    async onMessage(topic: string, payload: Buffer, packet: IPublishPacket) {
         if (this.publishedTopics.has(topic)) {
             logger.error("[mqtt] receive same topic as I send it => ", topic, this.publishedTopics);
             return;
@@ -223,7 +225,8 @@ class MQTT {
         }
 
         if (mqttTopicParser.isDiscoveryMsg(topic)) {
-
+            const payload = eventData.data as IDiscoveryMsg;
+            await initByDiscoveryMsg(payload);
         }
 
 

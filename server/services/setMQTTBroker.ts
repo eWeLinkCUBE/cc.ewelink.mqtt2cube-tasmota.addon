@@ -3,6 +3,7 @@ import { Request, Response } from 'express';
 import { toResponse } from '../utils/error';
 import logger from '../log';
 import { initMqtt } from '../ts/class/mqtt';
+import db from '../utils/db';
 
 
 /**
@@ -21,6 +22,8 @@ export default async function setMQTTBroker(req: Request, res: Response) {
             logger.error(`[setMQTTBroker] mqtt setting is wrong ${JSON.stringify({ username, pwd, host, port })}`)
             return res.json(toResponse(1001));
         }
+
+        await db.setDbValue('mqttSetting', { username, pwd, host, port });
 
         return res.json(toResponse(0));
     } catch (error: any) {

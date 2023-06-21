@@ -18,6 +18,8 @@ enum EApiPath {
     GET_AUTO_SYNC_STATUS = '/auto-sync',
     /** 开关新增设备自动同步 */
     CHANGE_AUTO_SYNC_STATUS = '/auto-sync',
+    /** 获取凭证 */
+    GET_IHOST_TOKEN = '/token',
     /** sse */
     SSE = '/sse',
 }
