@@ -3,6 +3,10 @@ import { toResponse } from '../utils/error';
 import logger from '../log';
 import db from '../utils/db';
 import { getDeviceSettingList } from '../utils/tmp';
+import { getIHostSyncDeviceList, syncDeviceToIHost } from '../cube-api/api';
+import EDeviceType from '../ts/enum/EDeviceType';
+import { generateIHostDevice } from './syncOneDevice';
+import { checkTasmotaDeviceInIHost } from '../utils/device';
 
 
 /**
@@ -16,40 +20,45 @@ export default async function syncAllDevices(req: Request, res: Response) {
     try {
 
         const deviceSettingList = getDeviceSettingList();
+        const result = await getIHostSyncDeviceList();
+        if (result.error === 401) {
+            logger.error(`[syncAllDevices] iHost token invalid`)
+            return res.json(toResponse(602));
+        } else if (result.error !== 0) {
+            logger.error(`[syncAllDevices] get iHost device list failed => ${JSON.stringify(result)}`)
+            return res.json(toResponse(500));
+        }
+        const deviceList = result.data!.device_list;
 
-        // TODO
+
         // 剔除掉所有unknown设备以及已同步的设备
+        const syncDevice = deviceSettingList.filter(setting => {
+            if (checkTasmotaDeviceInIHost(deviceList, setting.mac)) return false;
+            if (setting.display_category === EDeviceType.UNKNOWN) return false;
+        })
 
+        // 生成请求参数
+        const params = generateIHostDevice(syncDevice);
 
-        // if (deviceSetting.display_category === EDeviceType.UNKNOWN) {
-        //     logger.error(`[syncOneDevice] unknown device ${userMac} is not allowed to sync`);
-        //     return res.json(toResponse(1302));
-        // }
+        // 开始同步
+        const syncRes = await syncDeviceToIHost(params);
+        if (!syncRes) {
+            logger.error('[syncDevices] sync device to iHost fail----------------------');
+            return res.json(toResponse(500));
+        }
 
-        // // 生成请求参数
-        // const params = generateIHostDevice([deviceSetting]);
+        if (syncRes?.payload.description === 'headers.Authorization is invalid') {
+            logger.info('[syncDevices] sync iHost device,iHost token useless');
+            return res.json(toResponse(602));
+        }
 
-        // // 开始同步
-        // const syncRes = await syncDeviceToIHost(params);
+        if (syncRes?.payload.type === 'INVALID_PARAMETERS') {
+            logger.error(`[syncDevices] sync device to iHost error params------------------ ${JSON.stringify(params)} ${syncRes.payload}`);
+            //参数错误
+            return res.json(toResponse(500));
+        }
 
-        // if (!syncRes) {
-        //     logger.error('[syncDevices] sync device to iHost fail----------------------');
-        //     return res.json(toResponse(500));
-        // }
-
-        // if (syncRes?.payload.description === 'headers.Authorization is invalid') {
-        //     logger.info('[syncDevices] sync iHost device,iHost token useless-------------------------clear');
-        //     return res.json(toResponse(602));
-        // }
-
-        // if (syncRes?.payload.type === 'INVALID_PARAMETERS') {
-        //     logger.error(`[syncDevices] sync device to iHost error params------------------ ${JSON.stringify(params)} ${syncRes.payload}`);
-        //     //参数错误
-        //     return res.json(toResponse(500));
-        // }
-
-
-        return res.json(toResponse(0));
+        return res.json(toResponse(0, 'success', { successList: syncDevice.map((item) => item.mac) }));
     } catch (error: any) {
         logger.error(`get MQTT Broker error----------------: ${error.message}`);
         res.json(toResponse(500));

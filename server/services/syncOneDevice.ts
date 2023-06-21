@@ -6,8 +6,9 @@ import { TDeviceSetting, getDeviceSettingList } from '../utils/tmp';
 import EDeviceType from '../ts/enum/EDeviceType';
 import { TAG_DATA_NAME } from '../const';
 import config from '../config';
-import { ISyncDeviceToIHostReq, syncDeviceToIHost } from '../cube-api/api';
+import { ISyncDeviceToIHostReq, getIHostSyncDeviceList, syncDeviceToIHost } from '../cube-api/api';
 import { v4 as uuidv4 } from 'uuid';
+import { checkTasmotaDeviceInIHost } from '../utils/device';
 
 
 
@@ -80,6 +81,7 @@ export default async function syncOneDevice(req: Request, res: Response) {
 
         const deviceSettingList = getDeviceSettingList();
 
+        // 检查设备mac是否合法
         const deviceSetting = deviceSettingList.find(setting => setting.mac === userMac);
         if (!deviceSetting) {
             logger.error(`[syncOneDevice] device id ${userMac} is not exist in device list`);
@@ -89,6 +91,22 @@ export default async function syncOneDevice(req: Request, res: Response) {
         if (deviceSetting.display_category === EDeviceType.UNKNOWN) {
             logger.error(`[syncOneDevice] unknown device ${userMac} is not allowed to sync`);
             return res.json(toResponse(1302));
+        }
+
+        // 检查设备是否已经同步
+        const result = await getIHostSyncDeviceList();
+        if (result.error === 401) {
+            logger.error(`[syncOneDevice] iHost token invalid`)
+            return res.json(toResponse(602));
+        } else if (result.error !== 0) {
+            logger.error(`[syncOneDevice] get iHost device list failed => ${JSON.stringify(result)}`)
+            return res.json(toResponse(500));
+        }
+        const deviceList = result.data!.device_list;
+
+        if (checkTasmotaDeviceInIHost(deviceList, userMac)) {
+            logger.info(`[syncOneDevice] device ${userMac} is already exist in iHost`);
+            return res.json(toResponse(0));
         }
 
         // 生成请求参数

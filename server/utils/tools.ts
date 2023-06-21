@@ -17,19 +17,7 @@ function sleep(time: number) {
 }
 
 
-/**
- * @description 判断该ip是否还存活
- * @param {string} ip
- * @returns {*}  {Promise<boolean>}
- */
-async function isIpAlive(ip: string): Promise<boolean> {
-    const res = await ping.promise.probe(ip);
-    logger.debug(`ping ${ip} result ${JSON.stringify(res)}`);
-    return res.alive;
-}
-
 
 export default {
-    sleep,
-    isIpAlive
+    sleep
 }

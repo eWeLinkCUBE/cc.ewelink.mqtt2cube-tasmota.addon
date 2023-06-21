@@ -23,16 +23,20 @@ const ERROR_LIST = [
         errMsg: 'mqtt setting is invalid',   // mqtt配置有误
     },
     {
-        errCode: 1201,
-        errMsg: 'IP can not connect',   // IP 地址无法连接
-    },
-    {
         errCode: 1301,
         errMsg: 'device id invalid',   // 设备id无效
     },
     {
         errCode: 1302,
         errMsg: 'unknown device is not allowed to sync',   // 不支持设备不允许同步
+    },
+    {
+        errCode: 1801,
+        errMsg: 'device id invalid',   // 该设备不存在
+    },
+    {
+        errCode: 1802,
+        errMsg: 'device is not exist in iHost',   // 该设备已经存在iHost中
     },
 
 

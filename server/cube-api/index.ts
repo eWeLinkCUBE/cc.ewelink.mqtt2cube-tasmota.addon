@@ -68,16 +68,10 @@ export async function request<RespData>(url: string, method: EMethod, params?: a
 
     try {
         const res = await iHostAxiosInstance(axiosConfig);
-        if (res.data.error === 401) {
-            logger.info(`[request] token invalid`);
-            return toResponse(602);
-        }
-
         return res ? (res.data as ApiResponse<RespData>) : ({} as ApiResponse<RespData>);
     } catch (error) {
         logger.error('get iHost res error----------------------------', error);
-
-        return {} as ApiResponse<RespData>;
+        return toResponse(500);
     }
 }
 
@@ -104,7 +98,6 @@ export async function requestThirdParty<RespData>(url: string, method: EMethod, 
         return res ? (res.data as RespData) : ({} as RespData);
     } catch (error) {
         logger.error('get iHost device error ----------------------------------------', error);
-
         return {} as RespData;
     }
 }

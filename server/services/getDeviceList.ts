@@ -3,6 +3,7 @@ import { toResponse } from '../utils/error';
 import logger from '../log';
 import { getDeviceSettingList } from '../utils/tmp';
 import { getIHostSyncDeviceList } from '../cube-api/api';
+import { checkTasmotaDeviceInIHost } from '../utils/device';
 
 
 interface IDeviceInfo {
@@ -29,8 +30,11 @@ interface IDeviceInfo {
 export default async function getDeviceList(req: Request, res: Response) {
     try {
         const deviceRes = await getIHostSyncDeviceList();
-        if (deviceRes.error !== 0) {
-            logger.error(`[getDeviceList] getIHostSyncDeviceList error => ${JSON.stringify(deviceRes)}`);
+        if (deviceRes.error === 401) {
+            logger.error(`[getDeviceList] iHost token invalid`)
+            return res.json(toResponse(602));
+        } else if (deviceRes.error !== 0) {
+            logger.error(`[getDeviceList] get iHost device list failed => ${JSON.stringify(deviceRes)}`)
             return res.json(toResponse(500));
         }
 
@@ -39,13 +43,12 @@ export default async function getDeviceList(req: Request, res: Response) {
         const deviceInfoList: IDeviceInfo[] = [];
         for (const deviceSetting of deviceSettingList) {
             const { name, display_category, mac, online } = deviceSetting;
-            const synced = deviceList.some(device => JSON.stringify(device.tags).includes(mac));
             deviceInfoList.push({
                 name,
                 category: display_category,
                 id: mac,
                 online,
-                synced
+                synced: checkTasmotaDeviceInIHost(deviceList, mac)
             })
         }
 
