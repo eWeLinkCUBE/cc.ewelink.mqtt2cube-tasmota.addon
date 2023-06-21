@@ -1,7 +1,7 @@
 export const devConf = {
     nodeApp: {
         env: 'dev',
-        port: 8322,
+        port: 8325,
         dataPath: '',
         dbPath: '',
         name: 'Tasmota-Addon',
@@ -19,7 +19,7 @@ export const devConf = {
         pattern: '-yyyy-MM-dd.log',
     },
     /** 启动的ip */
-    localIp: 'http://192.168.31.194:8322',
+    localIp: 'http://192.168.31.194:8325',
     /** 获取网关凭证的等待时长 (ms) */
     getGatewayTokenTimeout: 300000,
 };

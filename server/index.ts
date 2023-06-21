@@ -6,9 +6,10 @@ import info from './middleware/info';
 import router from './routes';
 import { internalError, notFound } from './middleware/error';
 import config from './config';
-import { initDb } from './utils/db';
+import db, { initDb } from './utils/db';
 import oauth from './middleware/oauth';
 import _ from 'lodash';
+import { initMqtt } from './ts/class/mqtt';
 
 const app = express();
 const port = config.nodeApp.port;
@@ -40,7 +41,7 @@ app.use(express.static(path.join(__dirname, 'public')));
 app.use(info);
 
 // 鉴权校验
-app.use(oauth);
+// app.use(oauth);
 
 // 检查同步目标网关有效性
 // app.use(checkDestGateway);
@@ -53,10 +54,14 @@ app.use(notFound);
 app.use(internalError);
 
 app.listen(port, '0.0.0.0', async () => {
+    logger.info(`Server is running at http://localhost:${port}----env: ${config.nodeApp.env}----version: v${config.nodeApp.version}`);
+
     // 初始化数据库
     await initDb(dbPath, isDbFileExist);
+    const mqttSetting = await db.getDbValue('mqttSetting');
+    if (mqttSetting) {
+        logger.info(`begin init mqtt`);
+        await initMqtt(mqttSetting);
+    }
 
-    
-
-    logger.info(`Server is running at http://localhost:${port}----env: ${config.nodeApp.env}----version: v${config.nodeApp.version}`);
 });
