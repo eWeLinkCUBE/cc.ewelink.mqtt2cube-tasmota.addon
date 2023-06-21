@@ -18,14 +18,10 @@ export default async function getMQTTBroker(req: Request, res: Response) {
 
         if (!mqttSetting) {
             logger.error(`[getMQTTBroker] mqttSetting is not properly initiate! ${mqttSetting}`);
-            return res.json(toResponse(500));
+            return res.json(toResponse(0, 'success', {}));
         }
-        const { username, pwd, host, port } = mqttSetting;
+        const { username, pwd } = mqttSetting;
         logger.debug(`[getMQTTBroker] current mqttSetting is ${JSON.stringify(mqttSetting)}`);
-
-        if (!host || !port) {
-            return res.json(toResponse(0));
-        }
 
         if (!username && !pwd) {
             return res.json(toResponse(0, 'success', _.omit(mqttSetting, 'username', 'pwd')));

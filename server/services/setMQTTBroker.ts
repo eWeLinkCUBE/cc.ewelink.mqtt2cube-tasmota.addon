@@ -16,12 +16,13 @@ export default async function setMQTTBroker(req: Request, res: Response) {
     try {
         const { username, pwd, host, port } = req.body;
         const initRes = await initMqtt({ username, pwd, host, port });
+        logger.debug(`[setMQTTBroker] init result => ${initRes}`)
         if (!initRes) {
             logger.error(`[setMQTTBroker] mqtt setting is wrong ${JSON.stringify({ username, pwd, host, port })}`)
             return res.json(toResponse(1001));
         }
 
-        return res.json(0);
+        return res.json(toResponse(0));
     } catch (error: any) {
         logger.error(`[setMQTTBroker] catch error----------------: ${error}`);
         res.json(toResponse(500));

@@ -126,7 +126,7 @@ class MQTT {
 
     async connect() {
         const { username = "", pwd = "", host, port } = this.initParams
-        const mqttUrl = `mqtt://${host}` ?? 'mqtt://localhost';
+        const mqttUrl = `mqtt://${host}:${port}`;
         logger.info(`[mqtt] Connecting to MQTT server at ${mqttUrl}`);
         let hasInit = false;
 
@@ -303,14 +303,23 @@ class MQTT {
 
 let mqttClient: null | MQTT = null;
 export async function initMqtt(initParams: IMqttParams) {
-    const newMqttClient = new MQTT(initParams);
-    const res = await newMqttClient.connect();
-    if (res !== 1) {
+    try {
+        if (mqttClient) {
+            logger.info(`[initMqtt] mqtt already exist. close it`);
+            mqttClient.disconnect();
+        }
+        const newMqttClient = new MQTT(initParams);
+        const res = await newMqttClient.connect();
+        if (res !== 1) {
+            return false;
+        }
+
+        mqttClient = newMqttClient;
+        return true;
+    } catch (error: any) {
+        logger.error(`[initMqtt] init mqtt error => ${error.message}`)
         return false;
     }
-
-    mqttClient = newMqttClient;
-    return true;
 }
 
 export default mqttClient;
