@@ -1,14 +1,15 @@
 import _ from 'lodash';
 import logger from "../log";
+import { v4 as uuid } from 'uuid';
 import { getMQTTClient } from "../ts/class/mqtt";
 import EDeviceType from "../ts/enum/EDeviceType";
 import { IDiscoveryMsg } from "../ts/interface/IDiscoveryMsg";
 import { IMqttReceiveEvent, IStateTopic } from "../ts/interface/IMqtt";
 import { INotSupport } from "../ts/interface/INotSupport";
-import { ISwitch } from "../ts/interface/ISwitch";
-import db from "./db";
 import { initByDiscoveryMsg } from "./initByDiscoveryMsg";
 import { TDeviceSetting, getDeviceSettingList, updateDeviceSettingList } from "./tmp";
+import { getIHostSyncDeviceList, syncDeviceOnlineToIHost, syncDeviceStateToIHost } from '../cube-api/api';
+import { checkTasmotaDeviceInIHost } from './device';
 
 const DEVICE_TYPE_TO_FUNC_MAPPING = {
     [EDeviceType.SWITCH]: handleSwitchMQTTMsg,
@@ -39,7 +40,7 @@ async function resubscribeMQTTTopic(newDeviceSetting: TDeviceSetting, oldDeviceS
  */
 async function handleMQTTReceiveMsg(eventData: IMqttReceiveEvent<any>) {
     logger.info(`[handleMQTTReceiveMsg] topic ${eventData.topic} receive msg => ${typeof eventData.data === 'string' ? eventData.data : JSON.stringify(eventData.data, null, 2)}`);
-    const { topic, data } = eventData
+    const { topic } = eventData
     if (isDiscoveryMsg(topic)) {
         await initByDiscoveryMsg(eventData as IMqttReceiveEvent<IDiscoveryMsg>);
         return;
@@ -49,12 +50,12 @@ async function handleMQTTReceiveMsg(eventData: IMqttReceiveEvent<any>) {
     for (const deviceSetting of deviceSettingList) {
         const func = _.get(DEVICE_TYPE_TO_FUNC_MAPPING, deviceSetting.display_category);
         if (!func) return;
-        func(eventData, deviceSetting);
+        await func(eventData, deviceSetting);
     }
 }
 
 
-function handleSwitchMQTTMsg(eventData: IMqttReceiveEvent<any>, deviceSetting: TDeviceSetting) {
+async function handleSwitchMQTTMsg(eventData: IMqttReceiveEvent<any>, deviceSetting: TDeviceSetting) {
     logger.info(`[handleSwitchMQTTMsg] handling switch ${JSON.stringify(eventData)}`);
     if (deviceSetting.display_category !== EDeviceType.SWITCH) return;
     const { topic } = eventData;
@@ -63,7 +64,7 @@ function handleSwitchMQTTMsg(eventData: IMqttReceiveEvent<any>, deviceSetting: T
     const toggleCount = capabilities.filter(capability => capability.capability === 'toggle').length;
     const channelLength = toggleCount === 0 ? 1 : toggleCount;
 
-    if (topic.toLowerCase() === state_topic.toLowerCase()) {
+    if (topic.toLowerCase() === state_topic.toLowerCase() || topic.toLowerCase() === result_topic.toLowerCase()) {
         logger.info(`[handleSwitchMQTTMsg] here is state topic`);
         const payload = eventData.data as IStateTopic;
         if (channelLength === 1) {
@@ -76,28 +77,71 @@ function handleSwitchMQTTMsg(eventData: IMqttReceiveEvent<any>, deviceSetting: T
             const key = `POWER${i}` as keyof IStateTopic;
             deviceSetting.state.toggle![i].toggleState = payload[key] as "on" | "off";
         }
-    }
 
-    if (topic.toLowerCase() === result_topic.toLowerCase()) {
-        logger.info(`[handleSwitchMQTTMsg] here is result topic`);
-        if (JSON.stringify(eventData.data).includes('POWER')) {
-            const payload = eventData.data;
-            if (channelLength === 1) {
-                const power = payload.POWER === state_power_on ? "on" : "off";
-                deviceSetting.state.power.powerState = power;
-                return;
-            }
+        const res = await getIHostSyncDeviceList();
+        if (res.error !== 0) {
+            logger.error(`[handleSwitchMQTTMsg] get iHost device error => ${JSON.stringify(res)}`)
+            return;
+        }
 
-            for (let i = 1; i <= channelLength; i++) {
-                const key = `POWER${i}` as keyof IStateTopic;
-                deviceSetting.state.toggle![i].toggleState = payload[key] as "on" | "off";
+        const deviceList = res.data!.device_list;
+        if (checkTasmotaDeviceInIHost(deviceList, deviceSetting.mac)) {
+            const curDevice = deviceList.find(device => JSON.stringify(device.tags).includes(deviceSetting.mac));
+            const params = {
+                event: {
+                    header: {
+                        name: 'DeviceStatesChangeReport',
+                        message_id: uuid(),
+                        version: '1',
+                    },
+                    endpoint: {
+                        serial_number: curDevice!.serial_number,
+                        third_serial_number: deviceSetting.mac,
+                    },
+                    payload: {
+                        state: deviceSetting.state
+                    },
+                },
             }
+            logger.info(`[handleSwitchMQTTMsg] device state sync to iHost params ${params}`);
+            const syncRes = await syncDeviceStateToIHost(params);
+            logger.info(`[handleSwitchMQTTMsg] device state sync to iHost result ${syncRes}`);
         }
     }
+
 
     if (topic.toLowerCase() === availability_topic.toLowerCase()) {
         logger.info(`[handleSwitchMQTTMsg] here is LWT topic`);
         deviceSetting.online = eventData.data === availability_online;
+        const res = await getIHostSyncDeviceList();
+        if (res.error !== 0) {
+            logger.error(`[handleSwitchMQTTMsg] get iHost device error => ${JSON.stringify(res)}`)
+            return;
+        }
+
+        const deviceList = res.data!.device_list;
+        if (checkTasmotaDeviceInIHost(deviceList, deviceSetting.mac)) {
+            const curDevice = deviceList.find(device => JSON.stringify(device.tags).includes(deviceSetting.mac));
+            const params = {
+                event: {
+                    header: {
+                        name: 'DeviceOnlineChangeReport',
+                        message_id: uuid(),
+                        version: '1',
+                    },
+                    endpoint: {
+                        serial_number: curDevice!.serial_number,
+                        third_serial_number: deviceSetting.mac,
+                    },
+                    payload: {
+                        online: deviceSetting.online
+                    },
+                },
+            }
+            logger.info(`[handleSwitchMQTTMsg] device online sync to iHost params ${params}`);
+            const syncRes = await syncDeviceOnlineToIHost(params);
+            logger.info(`[handleSwitchMQTTMsg] device online sync to iHost result ${syncRes}`);
+        }
     }
 
     const curIdx = deviceSettingList.findIndex(curDeviceSetting => curDeviceSetting.mac === deviceSetting.mac);

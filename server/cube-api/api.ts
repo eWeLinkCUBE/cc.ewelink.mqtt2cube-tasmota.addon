@@ -45,6 +45,50 @@ export interface ISyncDeviceToIHostReq {
     };
 }
 
+interface SyncDeviceOnlineToIHostReq {
+    event: {
+        header: {
+            name: string;
+            message_id: string;
+            version: string;
+        };
+        endpoint: {
+            serial_number: string;
+            third_serial_number: string;
+        };
+        payload: {
+            online: boolean;
+        };
+    };
+}
+
+
+interface SyncDeviceStateToIHostReq {
+    event: {
+        header: {
+            name: string;
+            message_id: string;
+            version: string;
+        };
+        endpoint: {
+            serial_number: string;
+            third_serial_number: string;
+        };
+        payload: {
+            state: any;
+        };
+    };
+}
+
+
+interface SyncDeviceInfoToIHostRes {
+    header: {
+        name: 'Response';
+        message_id: string;
+        version: string;
+    };
+    payload: object;
+}
 
 /**
  * @description 获取 iHost 网关 token
@@ -86,4 +130,26 @@ export async function deleteDevice(serialNumber: string): Promise<IResponse<any>
  */
 export async function syncDeviceToIHost(params: ISyncDeviceToIHostReq) {
     return await requestThirdParty<ISyncDeviceToIHostRes>('/thirdparty/event', EMethod.POST, params);
+};
+
+
+/**
+ * @description 设备上下线状态同步
+ * @export
+ * @param {SyncDeviceOnlineToIHostReq} params
+ * @returns {*} 
+ */
+export const syncDeviceOnlineToIHost = (params: SyncDeviceOnlineToIHostReq) => {
+    return requestThirdParty<SyncDeviceInfoToIHostRes>('/thirdparty/event', EMethod.POST, params);
+};
+
+
+/**
+ * @description 设备状态状态同步
+ * @export
+ * @param {SyncDeviceOnlineToIHostReq} params
+ * @returns {*} 
+ */
+export const syncDeviceStateToIHost = (params: SyncDeviceStateToIHostReq) => {
+    return requestThirdParty<SyncDeviceInfoToIHostRes>('/thirdparty/event', EMethod.POST, params);
 };
