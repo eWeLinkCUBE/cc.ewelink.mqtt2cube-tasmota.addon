@@ -8,6 +8,7 @@ import { deleteDevice, getIHostSyncDeviceList } from '../cube-api/api';
 import logger from '../log';
 import { TAG_DATA_NAME } from '../const';
 import mqtt from './mqtt';
+import { IMqttReceiveEvent } from '../ts/interface/IMqtt';
 
 
 /** relay与类型的映射 */
@@ -77,15 +78,12 @@ async function compareSetting(newSetting: TDeviceSetting, oldSetting: TDeviceSet
         // 从一种类型变为另一种类型的处理，目前只支持switch，所以暂时不需要处理
     }
 
-    // 6. 类型没有变化则直接更新
-    // TODO 完善MQTT TOPIC 方法
-    mqtt.resubscribeMQTTTopic(newSetting, oldSetting);
     return newSetting;
 }
 
 
-export async function initByDiscoveryMsg(payload: IDiscoveryMsg) {
-    const { mac } = payload;
+export async function initByDiscoveryMsg(eventData: IMqttReceiveEvent<IDiscoveryMsg>) {
+    const { mac } = eventData.data;
 
     const deviceSettingList = getDeviceSettingList();
 
@@ -93,19 +91,22 @@ export async function initByDiscoveryMsg(payload: IDiscoveryMsg) {
     const deviceSettingIdx = _.findIndex(deviceSettingList, { mac });
 
     // 2.根据生成对应的数据结构
-    const curDeviceSetting = analyzeDiscovery(payload)
+    const curDeviceSetting = analyzeDiscovery(eventData.data)
 
     // 3. 缓存如果不存在，直接更新到缓存中去
     if (deviceSettingIdx === -1) {
         deviceSettingList.push(curDeviceSetting);
         updateDeviceSettingList(deviceSettingList);
+        mqtt.resubscribeMQTTTopic(curDeviceSetting);
         return;
     }
 
     // 4. 缓存如果存在，对比缓存中哪些东西产生了变化
-    const newDeviceSetting = await compareSetting(curDeviceSetting, deviceSettingList[deviceSettingIdx]);
+    const oldDeviceSetting = deviceSettingList[deviceSettingIdx];
+    const newDeviceSetting = await compareSetting(curDeviceSetting, oldDeviceSetting);
 
     // 5. 将最终生成的新setting更新回去
+    mqtt.resubscribeMQTTTopic(curDeviceSetting, oldDeviceSetting)
     deviceSettingList[deviceSettingIdx] = newDeviceSetting;
     updateDeviceSettingList(deviceSettingList);
 }

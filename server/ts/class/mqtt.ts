@@ -1,6 +1,6 @@
 import mqtt, { IClientOptions, IPublishPacket, IClientSubscribeOptions } from 'mqtt';
 import logger from '../../log';
-import { IMqttParams } from '../interface/IMqtt';
+import { IMqttParams, IMqttReceiveEvent } from '../interface/IMqtt';
 import db from '../../utils/db';
 import { initByDiscoveryMsg } from '../../utils/initByDiscoveryMsg';
 import { IDiscoveryMsg } from '../interface/IDiscoveryMsg';
@@ -24,88 +24,8 @@ const connectOption: IClientOptions = {
     connectTimeout: 30 * 1000,
     properties: {
         sessionExpiryInterval: 0
-    },
-    // will: {
-    //     topic: `${MQTT_HOST_BASE_TOPIC}/system/availability`,
-    //     retain: true,
-    //     payload: JSON.stringify({
-    //         online: false,
-    //         reason: "KeepAlive timeout"
-    //     }),
-    //     qos: 2,
-    //     properties: {
-    //         contentType: "application/json",
-    //         payloadFormatIndicator: true,
-    //         userProperties: {
-    //             reqClientId: MQTT_HOST_CLIENT_ID, // 标明本消息的原始请求方（AI Bridge 网关内部某功能模块）
-    //             reqSequence: Date.now()
-    //         },
-    //     }
-    // }
-};
-
-const mqttTopicParser = {
-    isDiscoveryMsg(topic = '') {
-        let topicComponents = topic.split('/');
-        return topicComponents[0] === 'tasmota'
-            && topicComponents[1] === 'discovery'
-            && topicComponents[3] === 'config';
-    },
-
-    isStorageUpdatedState(topic = '') {
-        let topicComponents = topic.split('/');
-        return topicComponents[0] === MQTT_STORAGE_BASE_TOPIC
-            && topicComponents[1] === 'device'
-            && topicComponents[3] === 'updated'
-            && topicComponents[4] === 'state';
-    },
-
-    isStorageFormatResult(topic = '') {
-        let topicComponents = topic.split('/');
-        return topicComponents[0] === MQTT_STORAGE_BASE_TOPIC
-            && topicComponents[1] === 'device'
-            && topicComponents[3] === 'updated'
-            && topicComponents[4] === 'format';
-    },
-
-    isStorageDiscovered(topic = '') {
-        let topicComponents = topic.split('/');
-        return topicComponents[0] === MQTT_STORAGE_BASE_TOPIC
-            && topicComponents[1] === 'system'
-            && topicComponents[2] === 'discovered';
-    },
-
-    isStorageDeleted(topic = '') {
-        let topicComponents = topic.split('/');
-        return topicComponents[0] === MQTT_STORAGE_BASE_TOPIC
-            && topicComponents[1] === 'device'
-            && topicComponents[3] === 'deleted';
-    },
-
-    isSystemLogUpdate(topic = '') {
-        let topicComponents = topic.split('/');
-        return topicComponents[0] === MQTT_HOST_BASE_TOPIC
-            && topicComponents[1] === 'system'
-            && topicComponents[2] === 'log'
-            && topicComponents[3] === 'update';
-    },
-
-    isBridgeAccesstoken(topic = '') {
-        let topicComponents = topic.split('/');
-        return topicComponents[0] === 'bridge'
-            && topicComponents[1] === 'updated'
-            && topicComponents[2] === 'access_token';
-    },
-
-    // bridge/updated/time_zone
-    isBridgeTimezone(topic = "") {
-        let topicComponents = topic.split('/');
-        return topicComponents[0] === 'bridge'
-            && topicComponents[1] === 'updated'
-            && topicComponents[2] === 'time_zone';
     }
 };
-
 
 /**
  * @description MQTT初始化及管理方法
@@ -143,12 +63,14 @@ class MQTT {
 
             const onConnect = this.#onConnect.bind(this);
             this.client.on('connect', async () => {
+                logger.error('[mqtt] connected to MQTT server!!!!');
                 await onConnect();
                 hasInit = true;
                 resolve(1);
             });
 
             this.client.on('error', (err) => {
+                logger.error(`[mqtt] mqtt connect error => ${err}`);
                 if (hasInit === true) {
                     reject(err);
                 }
@@ -180,21 +102,9 @@ class MQTT {
 
         await db.setDbValue('mqttSetting', this.initParams);
         logger.info('[mqtt] Connected to MQTT server');
-        // await this.publishStateOnline();
 
-        // 订阅
+        // 订阅 discovery 信息
         this.subscribe(`tasmota/discovery/#`);
-        // this.subscribe(`storage/system/discovered`);
-        // this.subscribe(`storage/device/#`);
-        /**
-         * 订阅bridge功能
-         */
-        // this.subscribe(`bridge/updated/access_token`);
-        // this.subscribe(`bridge/updated/time_zone`);
-        /**
-         * 订阅日志功能
-         */
-        // this.subscribe(`docker/system/log/update/#`);
     }
 
     /**
@@ -204,30 +114,39 @@ class MQTT {
      * @returns 
      */
     async onMessage(topic: string, payload: Buffer, packet: IPublishPacket) {
+        logger.info(`[mqtt] onMessage init params`, topic, payload, payload.length);
+
         if (this.publishedTopics.has(topic)) {
             logger.error("[mqtt] receive same topic as I send it => ", topic, this.publishedTopics);
             return;
         };
         const truePayload = payload.toString();
         logger.info(`[mqtt] onMessage params`, topic, truePayload, payload.length);
-        const eventData = {
+        const eventData: IMqttReceiveEvent<{}> = {
             topic,
             data: {},
             packet
         };
 
         try {
-            eventData.data = payload.length && JSON.parse(truePayload);
-            logger.info(`[mqtt] onMessage params`, JSON.stringify(eventData));
+            eventData.data = truePayload.length && JSON.parse(truePayload);
         } catch (error) {
-            logger.error(`[mqtt] onMessage parse error => ${error}`)
-            return;
+            eventData.data = truePayload
         }
 
-        if (mqttTopicParser.isDiscoveryMsg(topic)) {
-            const payload = eventData.data as IDiscoveryMsg;
-            await initByDiscoveryMsg(payload);
-        }
+
+        logger.info(`[mqtt] onMessage params`, JSON.stringify(eventData));
+
+        if (!eventData.data) return;
+
+
+
+
+
+
+
+
+
 
 
         // if (mqttTopicParser.isStorageAvailablity(topic)) this.eventBus.emitStorageAvailablity(eventData);
@@ -254,14 +173,36 @@ class MQTT {
     //     );
     // }
 
+    /**
+     * 订阅topic
+     * @param {string} topic 
+     * @param {string | object} payload 
+     * @param {mqtt.IClientPublishOptions} options 
+     * @returns 
+     */
     subscribe(topic: string, opt?: IClientSubscribeOptions) {
+        if (!topic) return;
         logger.info(`[mqtt] subscribe topic ${topic} ${opt ? 'with option' + opt : ''}`)
-        opt = Object.assign({}, { qos: 2, rap: true }, opt);
+        opt = opt ? Object.assign({}, { qos: 2, rap: true }, opt) : { qos: 2, rap: true };
+        logger.info(`[mqtt] subscribe topic option ${JSON.stringify(opt)}`)
         this.client!.subscribe(topic, opt);
     }
 
     /**
-     * 
+     * 取消订阅topic
+     * @param {string} topic 
+     * @param {string | object} payload 
+     * @param {mqtt.IClientPublishOptions} options 
+     * @returns 
+     */
+    unsubscribe(topic: string) {
+        if (!topic) return;
+        logger.info(`[mqtt] unsubscribe topic ${topic}`)
+        this.client!.unsubscribe(topic);
+    }
+
+    /**
+     * 发布topic
      * @param {string} topic 
      * @param {string | object} payload 
      * @param {mqtt.IClientPublishOptions} options 
@@ -318,11 +259,31 @@ export async function initMqtt(initParams: IMqttParams) {
         }
 
         mqttClient = newMqttClient;
+        logger.info(`[initMqtt] current mqttClient is => ${mqttClient}`);
         return true;
     } catch (error: any) {
         logger.error(`[initMqtt] init mqtt error => ${error.message}`)
         return false;
     }
+}
+
+
+export async function getMQTTClient(): Promise<MQTT | null> {
+    logger.info(`[getMQTTClient] getMQTTClient ${mqttClient}`)
+
+    if (mqttClient) {
+        logger.info(`[getMQTTClient] mqttClient exist => ${mqttClient}`)
+        return mqttClient;
+    }
+
+    logger.info(`[getMQTTClient] mqttClient not exist!!! => ${mqttClient}`)
+    const mqttSetting = await db.getDbValue('mqttSetting');
+    if (mqttSetting) {
+        const initRes = await initMqtt(mqttSetting);
+        return initRes ? mqttClient : null
+    }
+
+    return null;
 }
 
 export default mqttClient;

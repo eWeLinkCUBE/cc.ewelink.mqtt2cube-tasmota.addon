@@ -8,8 +8,8 @@ export const prodConf = {
         version: '0.0.1',
     },
     auth: {
-        appId: 'DP1ydXVV50xwj9Pi',
-        appSecret: 'gHDu79PCw*yR%wtfmy5YUzo!yknm74xz',
+        appId: 'IZCOQAdJ5pCItYrh',
+        appSecret: 'zpt5vuh#bl#HXvgwdShPoxakYN3q3F1e',
     },
     iHost: {
         api: 'http://ihost/open-api/v1/rest',

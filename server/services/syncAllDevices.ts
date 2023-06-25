@@ -21,7 +21,7 @@ export default async function syncAllDevices(req: Request, res: Response) {
 
         const deviceSettingList = getDeviceSettingList();
         const result = await getIHostSyncDeviceList();
-        if (result.error === 401) {
+        if (result.error === 401 || result.error === 400) {
             logger.error(`[syncAllDevices] iHost token invalid`)
             return res.json(toResponse(602));
         } else if (result.error !== 0) {

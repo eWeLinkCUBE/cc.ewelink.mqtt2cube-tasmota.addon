@@ -33,9 +33,11 @@ function getNotSupportDeviceSetting(discovery: IDiscoveryMsg): INotSupport {
         mac: mac,
         online: false,
         model: md,
-        availability_topic: getTopicTelemetryWill(discovery),
-        availability_offline: discovery['ofln'],
-        availability_online: discovery['onln'],
+        mqttTopics: {
+            availability_topic: getTopicTelemetryWill(discovery),
+            availability_offline: discovery['ofln'],
+            availability_online: discovery['onln'],
+        },
         sw_version: sw
     }
 
@@ -147,16 +149,18 @@ function getSwitchSetting(discovery: IDiscoveryMsg): ISwitch {
         online: false,
         model: md,
         mac,
-        poll_topic: getTopicCommandState(discovery),
-        availability_topic: getTopicTelemetryWill(discovery),
-        availability_offline: ofln,
-        availability_online: onln,
-        command_topic: getTopicCommand(discovery),
-        result_topic: getTopiCommandResult(discovery),
-        state_power_off: getStatePowerOff(discovery),
-        state_power_on: getStatePowerOn(discovery),
-        state_topic: getTopicTelemetryState(discovery),
-        fallback_topic: "",
+        mqttTopics: {
+            poll_topic: getTopicCommandState(discovery),
+            availability_topic: getTopicTelemetryWill(discovery),
+            availability_offline: ofln,
+            availability_online: onln,
+            command_topic: getTopicCommand(discovery),
+            result_topic: getTopiCommandResult(discovery),
+            state_power_off: getStatePowerOff(discovery),
+            state_power_on: getStatePowerOn(discovery),
+            state_topic: getTopicTelemetryState(discovery),
+            fallback_topic: "",
+        },
         sw_version: sw
     }
 

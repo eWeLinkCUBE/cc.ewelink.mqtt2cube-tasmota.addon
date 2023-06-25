@@ -21,7 +21,7 @@ export default async function unSyncOneDevice(req: Request, res: Response) {
         const deviceSettingList = getDeviceSettingList();
 
         const result = await getIHostSyncDeviceList()
-        if (result.error === 401) {
+        if (result.error === 401 || result.error === 400) {
             logger.error(`[unSyncOneDevice] iHost token invalid`)
             return res.json(toResponse(602));
         } else if (result.error !== 0) {
@@ -45,7 +45,7 @@ export default async function unSyncOneDevice(req: Request, res: Response) {
 
 
         const deleteRes = await deleteDevice(curDevice.serial_number);
-        if (deleteRes.error === 401) {
+        if (deleteRes.error === 401 || deleteRes.error === 400) {
             logger.error(`[unSyncOneDevice] unSync deviceId ${willUnSyncDeviceId} failed. iHost token invalid`)
             return res.json(toResponse(602));
         } else if (deleteRes.error === 110000) {
