@@ -26,7 +26,7 @@ export const DEVICE_SETTINGS: IDeviceSetting = {
  * @returns {*}  {INotSupport}
  */
 function getNotSupportDeviceSetting(discovery: IDiscoveryMsg): INotSupport {
-    const { dn, mac, sw, md } = discovery;
+    const { dn, mac, sw, md, t } = discovery;
     const notSupportSetting: INotSupport = {
         display_category: EDeviceType.UNKNOWN,
         name: dn,
@@ -34,9 +34,11 @@ function getNotSupportDeviceSetting(discovery: IDiscoveryMsg): INotSupport {
         online: false,
         model: md,
         mqttTopics: {
+            topic: t,
             availability_topic: getTopicTelemetryWill(discovery),
             availability_offline: discovery['ofln'],
             availability_online: discovery['onln'],
+            fallback_topic: getFallbackTopicFromMac(mac)
         },
         sw_version: sw
     }
@@ -51,7 +53,7 @@ function getNotSupportDeviceSetting(discovery: IDiscoveryMsg): INotSupport {
  * @returns {*}  {ISwitch}
  */
 function getSwitchSetting(discovery: IDiscoveryMsg): ISwitch {
-    const { rl, mac, fn, dn, ofln, onln, sw, md } = discovery;
+    const { rl, mac, fn, dn, ofln, onln, sw, md, t } = discovery;
 
     /** 通道数量 */
     let channelNum = 0;
@@ -150,6 +152,7 @@ function getSwitchSetting(discovery: IDiscoveryMsg): ISwitch {
         model: md,
         mac,
         mqttTopics: {
+            topic: t,
             poll_topic: getTopicCommandState(discovery),
             availability_topic: getTopicTelemetryWill(discovery),
             availability_offline: ofln,
@@ -159,7 +162,7 @@ function getSwitchSetting(discovery: IDiscoveryMsg): ISwitch {
             state_power_off: getStatePowerOff(discovery),
             state_power_on: getStatePowerOn(discovery),
             state_topic: getTopicTelemetryState(discovery),
-            fallback_topic: "",
+            fallback_topic: getFallbackTopicFromMac(mac),
         },
         sw_version: sw
     }
@@ -176,12 +179,23 @@ function getSwitchSetting(discovery: IDiscoveryMsg): ISwitch {
  * @returns {*}  {string}
  */
 function getTopic(discovery: IDiscoveryMsg, prefix: string): string {
-    let topic = discovery['ft']
+    let topic = discovery['ft'];
     topic = topic.replace("%hostname%", discovery['hn'])
     topic = topic.replace("%id%", discovery['mac'].slice(-6))
     topic = topic.replace("%prefix%", prefix)
-    topic = topic.replace("%topic%", discovery['t'])
+    topic = topic.replace("%topic%", discovery['t']);
     return topic
+}
+
+
+
+/**
+ * @description 根据mac生成fallback topic
+ * @param {string} mac
+ * @returns {*}  {string}
+ */
+function getFallbackTopicFromMac(mac: string): string {
+    return `DVES_${mac.slice(-6)}_fb`;
 }
 
 

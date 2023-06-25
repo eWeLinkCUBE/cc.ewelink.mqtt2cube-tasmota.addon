@@ -1,18 +1,13 @@
-import mqtt, { IClientOptions, IPublishPacket, IClientSubscribeOptions } from 'mqtt';
-import logger from '../../log';
-import { IMqttParams, IMqttReceiveEvent } from '../interface/IMqtt';
 import db from '../../utils/db';
-import { initByDiscoveryMsg } from '../../utils/initByDiscoveryMsg';
-import { IDiscoveryMsg } from '../interface/IDiscoveryMsg';
+import logger from '../../log';
+import mqttUtils from '../../utils/mqtt';
+import mqtt, { IClientOptions, IPublishPacket, IClientSubscribeOptions } from 'mqtt';
+import { IMqttParams, IMqttReceiveEvent } from '../interface/IMqtt';
 
 
 
 const MQTT_BROKER_KEEPALIVE = process.env.env === 'dev' ? 5 : 60;
-
-const MQTT_HOST_BASE_TOPIC = 'docker';
 const MQTT_HOST_CLIENT_ID = 'tasmota-add-on';
-
-const MQTT_STORAGE_BASE_TOPIC = 'storage';
 
 const connectOption: IClientOptions = {
     clientId: MQTT_HOST_CLIENT_ID,
@@ -32,10 +27,15 @@ const connectOption: IClientOptions = {
  * @class MQTT
  */
 class MQTT {
+    /** 初始化参数 */
     initParams: IMqttParams;
+    /** 连接定时器 主要用于心跳 */
     connectionTimer: NodeJS.Timer | null;
+    /** 已发布的topic */
     publishedTopics: Set<string>;
+    /** MQTT客户端实例 */
     client: mqtt.MqttClient | null;
+    /** 缓存，存取数据 */
     cache: any;
 
     constructor(initParams: IMqttParams) {
@@ -46,6 +46,12 @@ class MQTT {
         this.cache = {};
     }
 
+
+    /**
+     * @description 连接MQTT
+     * @returns {*} 
+     * @memberof MQTT
+     */
     async connect() {
         const { username = "", pwd = "", host, port } = this.initParams
         const mqttUrl = `mqtt://${host}:${port}`;
@@ -80,10 +86,22 @@ class MQTT {
         });
     }
 
+
+    /**
+     * @description 断连MQTT
+     * @returns {*} 
+     * @memberof MQTT
+     */
     disconnect() {
         return this.client!.end(true);
     }
 
+
+    /**
+     * @description 判断是否已经连接
+     * @returns {*} 
+     * @memberof MQTT
+     */
     isConnected() {
         return this.client && !this.client.reconnecting;
     }
@@ -121,7 +139,7 @@ class MQTT {
             return;
         };
         const truePayload = payload.toString();
-        logger.info(`[mqtt] onMessage params`, topic, truePayload, payload.length);
+        // logger.info(`[mqtt] onMessage params`, topic, truePayload, payload.length);
         const eventData: IMqttReceiveEvent<{}> = {
             topic,
             data: {},
@@ -131,22 +149,13 @@ class MQTT {
         try {
             eventData.data = truePayload.length && JSON.parse(truePayload);
         } catch (error) {
-            eventData.data = truePayload
+            eventData.data = truePayload;
         }
-
-
-        logger.info(`[mqtt] onMessage params`, JSON.stringify(eventData));
 
         if (!eventData.data) return;
 
-
-
-
-
-
-
-
-
+        // 处理消息
+        await mqttUtils.handleMQTTReceiveMsg(eventData);
 
 
         // if (mqttTopicParser.isStorageAvailablity(topic)) this.eventBus.emitStorageAvailablity(eventData);
@@ -245,8 +254,17 @@ class MQTT {
     }
 }
 
+
 let mqttClient: null | MQTT = null;
-export async function initMqtt(initParams: IMqttParams) {
+
+
+/**
+ * @description 初始化MQTT连接
+ * @export
+ * @param {IMqttParams} initParams 初始化信息
+ * @returns {*}  {Promise<boolean>}
+ */
+export async function initMqtt(initParams: IMqttParams): Promise<boolean> {
     try {
         if (mqttClient) {
             logger.info(`[initMqtt] mqtt already exist. close it`);
@@ -268,6 +286,11 @@ export async function initMqtt(initParams: IMqttParams) {
 }
 
 
+/**
+ * @description 获取MQTT Client
+ * @export
+ * @returns {*}  {(Promise<MQTT | null>)}
+ */
 export async function getMQTTClient(): Promise<MQTT | null> {
     logger.info(`[getMQTTClient] getMQTTClient ${mqttClient}`)
 

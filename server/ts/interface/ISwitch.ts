@@ -43,6 +43,8 @@ export interface ISwitch {
     mac: string;
     /** mqtt topics */
     mqttTopics: {
+        /** topic */
+        topic: string;
         /** 查询状态topic COMMAND-FOR_STATE-TOPIC-BY-CONFIG eg: cmnd/tasmota_plug/STATE*/
         poll_topic: string;
         /** 在线离线状态topic LWT-TOPIC-BY-CONFIG */

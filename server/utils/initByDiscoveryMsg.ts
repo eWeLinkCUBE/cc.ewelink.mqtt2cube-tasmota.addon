@@ -7,7 +7,7 @@ import { DEVICE_SETTINGS } from './generateDeviceSetting';
 import { deleteDevice, getIHostSyncDeviceList } from '../cube-api/api';
 import logger from '../log';
 import { TAG_DATA_NAME } from '../const';
-import mqtt from './mqtt';
+import mqttUtils from './mqtt';
 import { IMqttReceiveEvent } from '../ts/interface/IMqtt';
 
 
@@ -93,11 +93,12 @@ export async function initByDiscoveryMsg(eventData: IMqttReceiveEvent<IDiscovery
     // 2.根据生成对应的数据结构
     const curDeviceSetting = analyzeDiscovery(eventData.data)
 
+    // TODO 新增设备自动同步的逻辑！！！
     // 3. 缓存如果不存在，直接更新到缓存中去
     if (deviceSettingIdx === -1) {
         deviceSettingList.push(curDeviceSetting);
         updateDeviceSettingList(deviceSettingList);
-        mqtt.resubscribeMQTTTopic(curDeviceSetting);
+        mqttUtils.resubscribeMQTTTopic(curDeviceSetting);
         return;
     }
 
@@ -106,7 +107,7 @@ export async function initByDiscoveryMsg(eventData: IMqttReceiveEvent<IDiscovery
     const newDeviceSetting = await compareSetting(curDeviceSetting, oldDeviceSetting);
 
     // 5. 将最终生成的新setting更新回去
-    mqtt.resubscribeMQTTTopic(curDeviceSetting, oldDeviceSetting)
+    mqttUtils.resubscribeMQTTTopic(curDeviceSetting, oldDeviceSetting)
     deviceSettingList[deviceSettingIdx] = newDeviceSetting;
     updateDeviceSettingList(deviceSettingList);
 }

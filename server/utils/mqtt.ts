@@ -1,10 +1,19 @@
+import _ from 'lodash';
 import logger from "../log";
-import mqttClient, { getMQTTClient } from "../ts/class/mqtt";
+import { getMQTTClient } from "../ts/class/mqtt";
 import EDeviceType from "../ts/enum/EDeviceType";
 import { IDiscoveryMsg } from "../ts/interface/IDiscoveryMsg";
-import { IMqttReceiveEvent } from "../ts/interface/IMqtt";
+import { IMqttReceiveEvent, IStateTopic } from "../ts/interface/IMqtt";
+import { INotSupport } from "../ts/interface/INotSupport";
+import { ISwitch } from "../ts/interface/ISwitch";
+import db from "./db";
 import { initByDiscoveryMsg } from "./initByDiscoveryMsg";
-import { TDeviceSetting } from "./tmp";
+import { TDeviceSetting, getDeviceSettingList, updateDeviceSettingList } from "./tmp";
+
+const DEVICE_TYPE_TO_FUNC_MAPPING = {
+    [EDeviceType.SWITCH]: handleSwitchMQTTMsg,
+    [EDeviceType.UNKNOWN]: handleUnknownMQTTMsg,
+}
 
 
 /**
@@ -29,10 +38,86 @@ async function resubscribeMQTTTopic(newDeviceSetting: TDeviceSetting, oldDeviceS
  * @returns {*} 
  */
 async function handleMQTTReceiveMsg(eventData: IMqttReceiveEvent<any>) {
-    if (isDiscoveryMsg(eventData.topic)) {
+    logger.info(`[handleMQTTReceiveMsg] topic ${eventData.topic} receive msg => ${typeof eventData.data === 'string' ? eventData.data : JSON.stringify(eventData.data, null, 2)}`);
+    const { topic, data } = eventData
+    if (isDiscoveryMsg(topic)) {
         await initByDiscoveryMsg(eventData as IMqttReceiveEvent<IDiscoveryMsg>);
         return;
     }
+
+    const deviceSettingList = getDeviceSettingList()
+    for (const deviceSetting of deviceSettingList) {
+        const func = _.get(DEVICE_TYPE_TO_FUNC_MAPPING, deviceSetting.display_category);
+        if (!func) return;
+        func(eventData, deviceSetting);
+    }
+}
+
+
+function handleSwitchMQTTMsg(eventData: IMqttReceiveEvent<any>, deviceSetting: TDeviceSetting) {
+    logger.info(`[handleSwitchMQTTMsg] handling switch ${JSON.stringify(eventData)}`);
+    if (deviceSetting.display_category !== EDeviceType.SWITCH) return;
+    const { topic } = eventData;
+    const deviceSettingList = getDeviceSettingList();
+    const { mqttTopics: { state_topic, result_topic, availability_topic, availability_online, state_power_on }, capabilities } = deviceSetting;
+    const toggleCount = capabilities.filter(capability => capability.capability === 'toggle').length;
+    const channelLength = toggleCount === 0 ? 1 : toggleCount;
+
+    if (topic.toLowerCase() === state_topic.toLowerCase()) {
+        logger.info(`[handleSwitchMQTTMsg] here is state topic`);
+        const payload = eventData.data as IStateTopic;
+        if (channelLength === 1) {
+            const power = payload.POWER === state_power_on ? "on" : "off";
+            deviceSetting.state.power.powerState = power;
+            return;
+        }
+
+        for (let i = 1; i <= channelLength; i++) {
+            const key = `POWER${i}` as keyof IStateTopic;
+            deviceSetting.state.toggle![i].toggleState = payload[key] as "on" | "off";
+        }
+    }
+
+    if (topic.toLowerCase() === result_topic.toLowerCase()) {
+        logger.info(`[handleSwitchMQTTMsg] here is result topic`);
+        if (JSON.stringify(eventData.data).includes('POWER')) {
+            const payload = eventData.data;
+            if (channelLength === 1) {
+                const power = payload.POWER === state_power_on ? "on" : "off";
+                deviceSetting.state.power.powerState = power;
+                return;
+            }
+
+            for (let i = 1; i <= channelLength; i++) {
+                const key = `POWER${i}` as keyof IStateTopic;
+                deviceSetting.state.toggle![i].toggleState = payload[key] as "on" | "off";
+            }
+        }
+    }
+
+    if (topic.toLowerCase() === availability_topic.toLowerCase()) {
+        logger.info(`[handleSwitchMQTTMsg] here is LWT topic`);
+        deviceSetting.online = eventData.data === availability_online;
+    }
+
+    const curIdx = deviceSettingList.findIndex(curDeviceSetting => curDeviceSetting.mac === deviceSetting.mac);
+    deviceSettingList[curIdx] = deviceSetting;
+    updateDeviceSettingList(deviceSettingList);
+}
+
+function handleUnknownMQTTMsg(eventData: IMqttReceiveEvent<any>, deviceSetting: TDeviceSetting) {
+    const { topic, data } = eventData;
+    const { mqttTopics: { availability_topic, availability_online } } = deviceSetting as INotSupport;
+    const deviceSettingList = getDeviceSettingList();
+    if (topic.toLowerCase() === availability_topic.toLowerCase()) {
+        deviceSetting.online = data === availability_online;
+        const curIdx = deviceSettingList.findIndex(curDeviceSetting => curDeviceSetting.mac === deviceSetting.mac);
+        deviceSettingList[curIdx] = deviceSetting;
+        updateDeviceSettingList(deviceSettingList);
+        return;
+    }
+
+    return;
 }
 
 
