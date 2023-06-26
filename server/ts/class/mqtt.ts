@@ -76,11 +76,13 @@ class MQTT {
             });
 
             this.client.on('error', (err) => {
-                logger.error(`[mqtt] mqtt connect error => ${err}`);
-                if (hasInit === true) {
+                logger.error(`[mqtt] mqtt connect error => ${err} ${hasInit}`);
+                if (hasInit) {
                     reject(err);
+                    return;
                 }
 
+                resolve(0);
             });
             this.client.on('message', this.onMessage.bind(this));
         });
@@ -272,7 +274,10 @@ export async function initMqtt(initParams: IMqttParams): Promise<boolean> {
         }
         const newMqttClient = new MQTT(initParams);
         const res = await newMqttClient.connect();
+        logger.error(`[initMqtt] init mqtt result => ${res}`);
         if (res !== 1) {
+            logger.error(`[initMqtt] init mqtt broker error`);
+            newMqttClient.disconnect();
             return false;
         }
 

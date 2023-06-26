@@ -97,7 +97,6 @@ export async function initByDiscoveryMsg(eventData: IMqttReceiveEvent<IDiscovery
     // TODO 新增设备自动同步的逻辑！！！
     // 3. 缓存如果不存在，直接更新到缓存中去
     if (deviceSettingIdx === -1) {
-        
         deviceSettingList.push(curDeviceSetting);
         updateDeviceSettingList(deviceSettingList);
         mqttUtils.resubscribeMQTTTopic(curDeviceSetting);
