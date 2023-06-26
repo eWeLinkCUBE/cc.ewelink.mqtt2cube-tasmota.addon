@@ -60,7 +60,7 @@ async function handleSwitchMQTTMsg(eventData: IMqttReceiveEvent<any>, deviceSett
     if (deviceSetting.display_category !== EDeviceType.SWITCH) return;
     const { topic } = eventData;
     const deviceSettingList = getDeviceSettingList();
-    const { mqttTopics: { state_topic, result_topic, availability_topic, availability_online, state_power_on }, capabilities } = deviceSetting;
+    const { mqttTopics: { state_topic, result_topic, availability_topic, availability_online, state_power_on, state_power_off }, capabilities } = deviceSetting;
     const toggleCount = capabilities.filter(capability => capability.capability === 'toggle').length;
     const channelLength = toggleCount === 0 ? 1 : toggleCount;
 
@@ -75,7 +75,9 @@ async function handleSwitchMQTTMsg(eventData: IMqttReceiveEvent<any>, deviceSett
 
         for (let i = 1; i <= channelLength; i++) {
             const key = `POWER${i}` as keyof IStateTopic;
-            deviceSetting.state.toggle![i].toggleState = payload[key] as "on" | "off";
+            const validState = [state_power_on, state_power_off].includes(payload[key] as string);
+            if (!validState) continue;
+            deviceSetting.state.toggle![i].toggleState = payload[key] === state_power_on ? 'on' : 'off';
         }
 
         const res = await getIHostSyncDeviceList();
@@ -103,9 +105,9 @@ async function handleSwitchMQTTMsg(eventData: IMqttReceiveEvent<any>, deviceSett
                     },
                 },
             }
-            logger.info(`[handleSwitchMQTTMsg] device state sync to iHost params ${params}`);
+            logger.info(`[handleSwitchMQTTMsg] device state sync to iHost params ${JSON.stringify(params)}`);
             const syncRes = await syncDeviceStateToIHost(params);
-            logger.info(`[handleSwitchMQTTMsg] device state sync to iHost result ${syncRes}`);
+            logger.info(`[handleSwitchMQTTMsg] device state sync to iHost result ${JSON.stringify(syncRes)}`);
         }
     }
 
@@ -138,14 +140,15 @@ async function handleSwitchMQTTMsg(eventData: IMqttReceiveEvent<any>, deviceSett
                     },
                 },
             }
-            logger.info(`[handleSwitchMQTTMsg] device online sync to iHost params ${params}`);
+            logger.info(`[handleSwitchMQTTMsg] device online sync to iHost params ${JSON.stringify(params)}`);
             const syncRes = await syncDeviceOnlineToIHost(params);
-            logger.info(`[handleSwitchMQTTMsg] device online sync to iHost result ${syncRes}`);
+            logger.info(`[handleSwitchMQTTMsg] device online sync to iHost result ${JSON.stringify(syncRes)}`);
         }
     }
 
     const curIdx = deviceSettingList.findIndex(curDeviceSetting => curDeviceSetting.mac === deviceSetting.mac);
     deviceSettingList[curIdx] = deviceSetting;
+    logger.info(`[handleSwitchMQTTMsg] after update device setting => ${JSON.stringify(deviceSetting)}`);
     updateDeviceSettingList(deviceSettingList);
 }
 

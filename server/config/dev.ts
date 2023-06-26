@@ -19,7 +19,7 @@ export const devConf = {
         pattern: '-yyyy-MM-dd.log',
     },
     /** 启动的ip */
-    localIp: 'http://192.168.31.194:8325',
+    localIp: 'http://localhost:8325',
     /** 获取网关凭证的等待时长 (ms) */
     getGatewayTokenTimeout: 300000,
 };

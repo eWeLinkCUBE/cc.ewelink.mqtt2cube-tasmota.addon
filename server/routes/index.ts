@@ -37,7 +37,7 @@ router.put(EApiPath.CHANGE_AUTO_SYNC_STATUS, checkSchema({}), changeAutoSyncStat
 router.get(EApiPath.GET_IHOST_TOKEN, checkSchema({}), getIHostToken);
 
 // 开放接口路由
-router.post(EApiPath.OPEN_CONTROL_DEVICE, checkSchema(syncOneDeviceSchema), validate, openControlDevice);
+router.post(EApiPath.OPEN_CONTROL_DEVICE, checkSchema({}), validate, openControlDevice);
 
 // SSE 接口路由
 router.get(EApiPath.SSE, checkSchema({}), sse);

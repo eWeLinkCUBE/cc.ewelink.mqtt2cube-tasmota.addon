@@ -9,6 +9,7 @@ import logger from '../log';
 import { TAG_DATA_NAME } from '../const';
 import mqttUtils from './mqtt';
 import { IMqttReceiveEvent } from '../ts/interface/IMqtt';
+import mqttClient from '../ts/class/mqtt';
 
 
 /** relay与类型的映射 */
@@ -91,7 +92,7 @@ export async function initByDiscoveryMsg(eventData: IMqttReceiveEvent<IDiscovery
     const deviceSettingIdx = _.findIndex(deviceSettingList, { mac });
 
     // 2.根据生成对应的数据结构
-    const curDeviceSetting = analyzeDiscovery(eventData.data)
+    const curDeviceSetting = analyzeDiscovery(eventData.data);
 
     // TODO 新增设备自动同步的逻辑！！！
     // 3. 缓存如果不存在，直接更新到缓存中去
@@ -110,4 +111,16 @@ export async function initByDiscoveryMsg(eventData: IMqttReceiveEvent<IDiscovery
     mqttUtils.resubscribeMQTTTopic(curDeviceSetting, oldDeviceSetting)
     deviceSettingList[deviceSettingIdx] = newDeviceSetting;
     updateDeviceSettingList(deviceSettingList);
+
+
+    // 6. 推送topic查询设备状态
+    if (!mqttClient) {
+        logger.error(`[initByDiscoveryMsg] mqtt client doesn't exist`);
+        return;
+    }
+
+    if (newDeviceSetting.display_category === EDeviceType.SWITCH) {
+        const publishRes = await mqttClient.publish(`${newDeviceSetting.mqttTopics.poll_topic}`, "");
+        logger.info(`[initByDiscoveryMsg] publish topic res => ${publishRes}`);
+    }
 }

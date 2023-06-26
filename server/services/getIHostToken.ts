@@ -12,7 +12,7 @@ export default async function getIHostToken(req: Request, res: Response) {
             return res.json(toResponse(0));
         }
         const { error, data } = await getPermissionApi({ app_name: config.nodeApp.name });
-        logger.info(`[getPermission] get iHost token res------------------------- ${error} ${data}`);
+        logger.info(`[getPermission] get iHost token res------------------------- ${error} ${JSON.stringify(data)}`);
 
         if (data?.token) {
             await db.setDbValue('iHostToken', data.token);

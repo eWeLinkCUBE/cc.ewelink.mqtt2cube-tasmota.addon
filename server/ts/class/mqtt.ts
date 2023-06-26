@@ -217,7 +217,7 @@ class MQTT {
      * @param {mqtt.IClientPublishOptions} options 
      * @returns 
      */
-    async publish(topic: string, payload: Buffer, options = {}) {
+    async publish(topic: string, payload: Buffer | string, options = {}) {
         let sendPayload: Buffer | string = payload;
         const defaultOptions = {
             qos: 1,
