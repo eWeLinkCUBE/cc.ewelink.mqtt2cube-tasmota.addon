@@ -1,11 +1,9 @@
-import { v4 as uuidv4 } from 'uuid';
 import _ from 'lodash';
 import config from '../config';
 import logger from '../log';
 import KeyV from 'keyv';
 import { KeyvFile } from 'keyv-file';
 import encryption from './encryption';
-import { ServerSentEvent } from '../ts/class/srcSse';
 import { IMqttParams } from '../ts/interface/IMqtt';
 
 let store: KeyV | null = null;

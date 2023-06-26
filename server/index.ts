@@ -10,7 +10,7 @@ import db, { initDb } from './utils/db';
 import oauth from './middleware/oauth';
 import _ from 'lodash';
 import { initMqtt } from './ts/class/mqtt';
-import { checkMQTTAlive } from './middleware/checkDestGateway';
+import { checkMQTTAlive } from './middleware/checkMQTTAlive';
 
 const app = express();
 const port = config.nodeApp.port;
