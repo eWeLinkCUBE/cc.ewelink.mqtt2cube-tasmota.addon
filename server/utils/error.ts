@@ -19,6 +19,10 @@ const ERROR_LIST = [
         errMsg: 'token invalid'    // iHost 凭证无效
     },
     {
+        errCode: 603,
+        errMsg: 'mqtt disconnect'    // mqtt 断连
+    },
+    {
         errCode: 1001,
         errMsg: 'mqtt setting is invalid',   // mqtt配置有误
     },

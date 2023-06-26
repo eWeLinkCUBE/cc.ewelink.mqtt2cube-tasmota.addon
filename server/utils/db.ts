@@ -65,14 +65,14 @@ interface IDbData {
     mqttSetting: null | IMqttParams;
     /** iHost 凭证 */
     iHostToken: string;
-    /** 是否开启自动同步 */
+    /** 是否开启自动同步，默认为false */
     autoSync: boolean;
 }
 
 export const dbDataTmp: IDbData = {
     mqttSetting: null,
     iHostToken: "",
-    autoSync: true
+    autoSync: false
 };
 
 /** 获取所有数据 */

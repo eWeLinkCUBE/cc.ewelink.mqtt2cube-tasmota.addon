@@ -4,12 +4,15 @@ import { TDeviceSetting, getDeviceSettingList, updateDeviceSettingList } from ".
 import ERelayType from '../ts/enum/ERelayType';
 import EDeviceType from '../ts/enum/EDeviceType';
 import { DEVICE_SETTINGS } from './generateDeviceSetting';
-import { deleteDevice, getIHostSyncDeviceList } from '../cube-api/api';
+import { deleteDevice, getIHostSyncDeviceList, syncDeviceToIHost } from '../cube-api/api';
 import logger from '../log';
 import { TAG_DATA_NAME } from '../const';
 import mqttUtils from './mqtt';
 import { IMqttReceiveEvent } from '../ts/interface/IMqtt';
 import mqttClient from '../ts/class/mqtt';
+import db from './db';
+import { generateIHostDevice } from '../services/syncOneDevice';
+import SSE from '../ts/class/sse';
 
 
 /** relay与类型的映射 */
@@ -86,7 +89,11 @@ async function compareSetting(newSetting: TDeviceSetting, oldSetting: TDeviceSet
 export async function initByDiscoveryMsg(eventData: IMqttReceiveEvent<IDiscoveryMsg>) {
     const { mac } = eventData.data;
 
+    /** 设备配置信息列表 */
     const deviceSettingList = getDeviceSettingList();
+
+    /** 自动同步开关 */
+    const autoSync = await db.getDbValue('autoSync');
 
     // 1.判断这个mac地址在缓存中是否存在
     const deviceSettingIdx = _.findIndex(deviceSettingList, { mac });
@@ -94,12 +101,37 @@ export async function initByDiscoveryMsg(eventData: IMqttReceiveEvent<IDiscovery
     // 2.根据生成对应的数据结构
     const curDeviceSetting = analyzeDiscovery(eventData.data);
 
-    // TODO 新增设备自动同步的逻辑！！！
     // 3. 缓存如果不存在，直接更新到缓存中去
     if (deviceSettingIdx === -1) {
         deviceSettingList.push(curDeviceSetting);
         updateDeviceSettingList(deviceSettingList);
         mqttUtils.resubscribeMQTTTopic(curDeviceSetting);
+        const { name, display_category, mac, online } = curDeviceSetting;
+        let synced = false;
+
+        // 自动同步逻辑
+        if (autoSync && curDeviceSetting.display_category !== EDeviceType.UNKNOWN) {
+            logger.info(`[initByDiscoveryMsg] autoSync is true`);
+            const params = generateIHostDevice([curDeviceSetting]);
+            const syncRes = await syncDeviceToIHost(params);
+            if (_.isEmpty(syncRes.payload)) {
+                synced = true;
+            }
+            logger.info(`[initByDiscoveryMsg] auto sync device ${JSON.stringify(syncRes)}`)
+        }
+
+        // 发送SSE给前端
+        SSE.send({
+            name: "new_device_report",
+            data: {
+                name,
+                category: display_category,
+                id: mac,
+                online,
+                synced
+            }
+        });
+
         return;
     }
 

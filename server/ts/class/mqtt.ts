@@ -3,6 +3,8 @@ import logger from '../../log';
 import mqttUtils from '../../utils/mqtt';
 import mqtt, { IClientOptions, IPublishPacket, IClientSubscribeOptions } from 'mqtt';
 import { IMqttParams, IMqttReceiveEvent } from '../interface/IMqtt';
+import { getMQTTConnected, updateMQTTConnected } from '../../utils/tmp';
+import SSE from './sse';
 
 
 
@@ -72,11 +74,28 @@ class MQTT {
                 logger.error('[mqtt] connected to MQTT server!!!!');
                 await onConnect();
                 hasInit = true;
+                const mqttConnected = getMQTTConnected();
+                if (!mqttConnected) {
+                    SSE.send({
+                        name: "mqtt_connected_report",
+                        data: {}
+                    })
+                    updateMQTTConnected(true);
+                }
                 resolve(1);
             });
 
             this.client.on('error', (err) => {
                 logger.error(`[mqtt] mqtt connect error => ${err} ${hasInit}`);
+                const mqttConnected = getMQTTConnected();
+                if (mqttConnected) {
+                    SSE.send({
+                        name: "mqtt_disconnect_report",
+                        data: {}
+                    })
+                    updateMQTTConnected(false);
+                }
+
                 if (hasInit) {
                     reject(err);
                     return;

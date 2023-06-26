@@ -10,6 +10,7 @@ import db, { initDb } from './utils/db';
 import oauth from './middleware/oauth';
 import _ from 'lodash';
 import { initMqtt } from './ts/class/mqtt';
+import { checkMQTTAlive } from './middleware/checkDestGateway';
 
 const app = express();
 const port = config.nodeApp.port;
@@ -43,8 +44,8 @@ app.use(info);
 // 鉴权校验
 // app.use(oauth);
 
-// 检查同步目标网关有效性
-// app.use(checkDestGateway);
+// 检查MQTT有效性
+app.use(checkMQTTAlive);
 
 // 路由处理
 app.use('/api/v1', router);
