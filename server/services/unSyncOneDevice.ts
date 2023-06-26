@@ -3,6 +3,7 @@ import { toResponse } from '../utils/error';
 import logger from '../log';
 import { deleteDevice, getIHostSyncDeviceList } from '../cube-api/api';
 import { getDeviceSettingList } from '../utils/tmp';
+import SSE from '../ts/class/sse';
 
 
 /**
@@ -30,7 +31,7 @@ export default async function unSyncOneDevice(req: Request, res: Response) {
         }
         const deviceList = result.data!.device_list;
 
-        const deviceSetting = deviceSettingList.some(setting => setting.mac === willUnSyncDeviceId);
+        const deviceSetting = deviceSettingList.find(setting => setting.mac === willUnSyncDeviceId);
         if (!deviceSetting) {
             logger.error(`[unSyncOneDevice] unSync deviceId ${willUnSyncDeviceId} is not exist in ${JSON.stringify(deviceSettingList)}`);
             return res.json(toResponse(1801));
@@ -55,6 +56,18 @@ export default async function unSyncOneDevice(req: Request, res: Response) {
             logger.error(`[unSyncOneDevice] unSync deviceId ${willUnSyncDeviceId} failed. => ${JSON.stringify(result)}`)
             return res.json(toResponse(500));
         }
+
+        const { name, mac, display_category, online } = deviceSetting;
+        SSE.send({
+            name: "un_sync_report",
+            data: {
+                name,
+                id: mac,
+                category: display_category,
+                online,
+                synced: false
+            }
+        })
 
         return res.json(toResponse(0));
     } catch (error: any) {

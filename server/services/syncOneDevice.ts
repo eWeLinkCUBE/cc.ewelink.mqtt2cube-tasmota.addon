@@ -4,7 +4,7 @@ import { toResponse } from '../utils/error';
 import logger from '../log';
 import { TDeviceSetting, getDeviceSettingList } from '../utils/tmp';
 import EDeviceType from '../ts/enum/EDeviceType';
-import { TAG_DATA_NAME } from '../const';
+import SSE from '../ts/class/sse';
 import config from '../config';
 import { ISyncDeviceToIHostReq, getIHostSyncDeviceList, syncDeviceToIHost } from '../cube-api/api';
 import { v4 as uuidv4 } from 'uuid';
@@ -129,6 +129,13 @@ export default async function syncOneDevice(req: Request, res: Response) {
             return res.json(toResponse(500));
         }
 
+        const { mac } = deviceSetting;
+        SSE.send({
+            name: "sync_success_report",
+            data: {
+                successList: [mac]
+            }
+        })
 
         return res.json(toResponse(0));
     } catch (error: any) {
