@@ -1,0 +1,16 @@
+{
+    "extends": "@vue/tsconfig/tsconfig.dom.json",
+    "include": ["env.d.ts", "src/**/*.vue", "src/**/*.ts"],
+    "exclude": ["src/**/__tests__/*"],
+    "compilerOptions": {
+        "composite": true,
+        "types": ["node"],
+        "ignoreDeprecations": "5.0",
+        "baseUrl": ".",
+        "paths": {
+            "@/*": ["./src/*"]
+        },
+        "noImplicitAny": false,
+        "allowJs": true
+    }
+}
