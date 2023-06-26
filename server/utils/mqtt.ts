@@ -55,6 +55,12 @@ async function handleMQTTReceiveMsg(eventData: IMqttReceiveEvent<any>) {
 }
 
 
+/**
+ * @description 处理SWITCH类设备的消息
+ * @param {IMqttReceiveEvent<any>} eventData
+ * @param {TDeviceSetting} deviceSetting
+ * @returns {*} 
+ */
 async function handleSwitchMQTTMsg(eventData: IMqttReceiveEvent<any>, deviceSetting: TDeviceSetting) {
     logger.info(`[handleSwitchMQTTMsg] handling switch ${JSON.stringify(eventData)}`);
     if (deviceSetting.display_category !== EDeviceType.SWITCH) return;
@@ -152,6 +158,14 @@ async function handleSwitchMQTTMsg(eventData: IMqttReceiveEvent<any>, deviceSett
     updateDeviceSettingList(deviceSettingList);
 }
 
+
+
+/**
+ * @description 处理不支持设备的消息
+ * @param {IMqttReceiveEvent<any>} eventData
+ * @param {TDeviceSetting} deviceSetting
+ * @returns {*} 
+ */
 function handleUnknownMQTTMsg(eventData: IMqttReceiveEvent<any>, deviceSetting: TDeviceSetting) {
     const { topic, data } = eventData;
     const { mqttTopics: { availability_topic, availability_online } } = deviceSetting as INotSupport;

@@ -1,6 +1,6 @@
 import _ from 'lodash';
 import { IDiscoveryMsg } from "../ts/interface/IDiscoveryMsg";
-import { TDeviceSetting, TDeviceSettingList, getDeviceSettingList, updateDeviceSettingList } from "./tmp";
+import { TDeviceSetting, getDeviceSettingList, updateDeviceSettingList } from "./tmp";
 import ERelayType from '../ts/enum/ERelayType';
 import EDeviceType from '../ts/enum/EDeviceType';
 import { DEVICE_SETTINGS } from './generateDeviceSetting';

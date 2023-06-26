@@ -33,11 +33,11 @@ export default async function openControlDevice(req: Request, res: Response) {
         }
 
         const deviceSettingList = getDeviceSettingList();
-        const toggleCount = Object.keys(iHostState.toggle!).length;
-        const channelLength = toggleCount === 0 ? 1 : toggleCount;
-        logger.info(`[openControlDevice] channelLength => ${channelLength}`);
         for (const deviceSetting of deviceSettingList) {
             if (deviceSetting.mac === mac && deviceSetting.display_category === EDeviceType.SWITCH) {
+                const toggleState = _.get(deviceSetting.state, 'toggle');
+                const channelLength = toggleState ? Object.keys(toggleState).length : 1;
+                logger.info(`[openControlDevice] channelLength => ${channelLength}`);
                 const { mqttTopics } = deviceSetting;
                 if (channelLength === 1) {
                     const powerState = iHostState.power.powerState;
@@ -50,15 +50,18 @@ export default async function openControlDevice(req: Request, res: Response) {
                 }
 
                 for (let i = 1; i <= channelLength; i++) {
-                    const powerState = iHostState.toggle![i].toggleState;
-                    const publishRes = await mqttClient.publish(`${mqttTopics.command_topic}/POWER${i}`, powerState);
+                    const toggleObj = _.get(iHostState, ['toggle', `${i}`, 'toggleState']);
+                    const powerObj = _.get(iHostState, ['power', 'powerState']);
+                    if (!toggleObj && !powerObj) continue;
+                    const power = toggleObj || powerObj;
+                    const publishRes = await mqttClient.publish(`${mqttTopics.command_topic}/POWER${i}`, power);
                     if (publishRes === 0) {
                         logger.error(`publish mqtt topic failed!`);
                         return res.json(createFailRes(message_id));
                     }
                 }
 
-                deviceSetting.state = iHostState;
+                deviceSetting.state = _.merge(deviceSetting.state, iHostState);
             }
         }
 
