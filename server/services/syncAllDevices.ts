@@ -39,6 +39,11 @@ export default async function syncAllDevices(req: Request, res: Response) {
 
         logger.info(`[syncAllDevices] syncDevice => ${JSON.stringify(syncDevice)}`)
 
+        if (syncDevice.length === 0) {
+            logger.info(`[syncAllDevices] device to sync is null`);
+            return res.json(toResponse(0, 'success', { successList: [] }));
+        }
+
         // 生成请求参数
         const params = generateIHostDevice(syncDevice);
 
