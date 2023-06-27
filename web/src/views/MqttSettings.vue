@@ -15,6 +15,30 @@
         <div class="footer">
             <a-button :disabled="saveDisabled" :loading="saveLoading" class="save-btn" @click="save">{{ t('SAVE') }}</a-button>
         </div>
+        <div class="setting-tip-container" v-show="showModal">
+            <div class="setting-tip-modal">
+                <div class="main-title">{{ t('SETTINGS_TIP_MODAL.MAIN_TITLE') }}</div>
+                <div class="tip-block prepare-work-block">
+                    <div class="tip-title prepare-work-title">{{ t('SETTINGS_TIP_MODAL.PREPARE_WORK.TITLE') }}</div>
+                    <ul style="list-style-type: decimal; padding-inline-start: 14px">
+                        <li class="tip-content prepare-work-content">{{ t('SETTINGS_TIP_MODAL.PREPARE_WORK.STEP1') }}</li>
+                        <li class="tip-content prepare-work-content">{{ t('SETTINGS_TIP_MODAL.PREPARE_WORK.STEP2') }}</li>
+                        <li class="tip-content prepare-work-content">{{ t('SETTINGS_TIP_MODAL.PREPARE_WORK.STEP3') }}</li>
+                        <li class="tip-content prepare-work-content">
+                            {{ t('SETTINGS_TIP_MODAL.PREPARE_WORK.STEP4') }}<u class="doc-link" @click="goDoc">{{ t('SETTINGS_TIP_MODAL.PREPARE_WORK.DOC_LINK') }}</u>
+                        </li>
+                    </ul>
+                </div>
+                <div class="tip-block supported-device-block">
+                    <div class="tip-title supported-device-title">{{ t('SETTINGS_TIP_MODAL.SUPPORTED_DEVICE.TITLE') }}</div>
+                    <span class="tip-content prepare-work-content">{{ t('SETTINGS_TIP_MODAL.SUPPORTED_DEVICE.CONTENT') }}</span>
+                </div>
+                <div class="tip-content footer-tip">{{ t('SETTINGS_TIP_MODAL.FOOTER_TIP') }}</div>
+                <div class="confirm-flex">
+                    <a-button class="confirm-btn" @click="hideModal">{{ t('SETTINGS_TIP_MODAL.CONFIRM') }}</a-button>
+                </div>
+            </div>
+        </div>
     </div>
 </template>
 
@@ -25,6 +49,7 @@ import { message } from 'ant-design-vue';
 import { decryptAES, encryptAES } from '@/utils/tools';
 import { APP_SECRET } from '@/config';
 import router from '@/router';
+import { useEtcStore } from '@/stores/etc';
 
 interface IOption {
     label: string;
@@ -33,6 +58,9 @@ interface IOption {
     placeholder: string;
     required: boolean;
 }
+
+// pinia
+const etcStore = useEtcStore();
 
 // 国际化
 const { t } = useI18n();
@@ -44,6 +72,7 @@ const saveDisabled = computed(() => {
     });
 });
 const saveLoading = ref(false);
+const showModal = ref(false);
 
 // 数据
 const options = ref<IOption[]>([
@@ -131,11 +160,26 @@ const save = async () => {
     console.log('配置数据：', params);
     const isSuccess = await setMqttSettings(params);
     if (isSuccess) {
+        !etcStore.isSetMqtt && etcStore.updateIsSetMqtt(true);
         router.push({ name: 'deviceList' });
     }
 };
 
+// 隐藏使用前提示modal
+const hideModal = () => {
+    showModal.value = false;
+};
+
+// 跳转参考文档
+const goDoc = () => {
+    window.open('https://tasmota.github.io/docs/Commands/#setoptions');
+};
+
 onMounted(async () => {
+    // 校验本地缓存状态是否已配置过mqtt，若没有则需要弹出使用前提示modal
+    if (!etcStore.isSetMqtt) {
+        showModal.value = true;
+    }
     await getMqttSettings();
 });
 </script>
@@ -146,6 +190,7 @@ onMounted(async () => {
     height: 100vh;
     display: flex;
     flex-direction: column;
+    position: relative;
     .header {
         width: 100vw;
         height: 80px;
@@ -158,7 +203,6 @@ onMounted(async () => {
         }
     }
     .body {
-        flex: 1;
         display: flex;
         flex-direction: column;
         color: #424242;
@@ -189,9 +233,10 @@ onMounted(async () => {
     }
     .footer {
         width: 100%;
-        height: 120px;
+        height: 80px;
         display: flex;
         justify-content: center;
+        margin-top: 60px;
         .save-btn {
             width: 200px;
             height: 40px;
@@ -213,6 +258,77 @@ onMounted(async () => {
             &:focus {
                 background-color: #999999;
                 color: white;
+            }
+        }
+    }
+    .setting-tip-container {
+        position: absolute;
+        top: 0;
+        left: 0;
+        width: 100vw;
+        height: 100vh;
+        display: flex;
+        justify-content: center;
+        align-items: center;
+        background-color: rgba(34, 34, 34, 0.6);
+        .setting-tip-modal {
+            width: 480px;
+            padding: 16px;
+            border-radius: 8px;
+            color: #424242;
+            font-weight: 400;
+            background-color: white;
+            .main-title {
+                font-size: 16px;
+                font-weight: 500;
+                margin-bottom: 8px;
+            }
+            .tip-block {
+                width: 100%;
+                padding: 8px;
+                background-color: #f7f8fa;
+                border-radius: 8px;
+                font-size: 14px;
+                margin-bottom: 12px;
+                .tip-title {
+                    margin-bottom: 4px;
+                }
+                .tip-content {
+                    color: #999999;
+                    line-height: 25px;
+                }
+            }
+            .prepare-work-block {
+                .doc-link {
+                    color: #1890ff;
+                    cursor: pointer;
+                }
+            }
+            .footer-tip {
+                margin-top: -4px;
+                margin-bottom: 24px;
+                color: #999999;
+                padding: 0 8px;
+            }
+            .confirm-flex {
+                display: flex;
+                justify-content: center;
+                align-items: center;
+                .confirm-btn {
+                    width: 120px;
+                    height: 36px;
+                    border-radius: 4px;
+                    &,
+                    &:active,
+                    &:focus {
+                        background-color: #1890ff;
+                        color: white;
+                    }
+                    &:hover {
+                        background-color: #409eff;
+                        color: white;
+                    }
+                }
             }
         }
     }

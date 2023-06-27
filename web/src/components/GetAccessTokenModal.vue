@@ -53,7 +53,6 @@ const props = defineProps({
 const emits = defineEmits(['getTokenSuccess', 'hideModal']);
 const getAccessTokenTimer = ref<any>();
 const getAccessTokenNumber = ref<number>(0);
-
 const isIframe = computed(() => {
     if (self.frameElement && self.frameElement.tagName == 'IFRAME') {
         return true;
@@ -120,6 +119,9 @@ const getIhostAccessToken = async () => {
         const res = await getToken();
         if (res.error === 0) {
             clearInterval(getAccessTokenTimer.value);
+            if (isIframe.value) {
+                emits('getTokenSuccess');
+            }
         }
     }, 10000);
 };

@@ -10,7 +10,6 @@
                 <span class="auto-sync-tip">{{ t('AUTO_SYNC_TIP') }}</span>
                 <a-switch v-model:checked="autoSyncSwitch" :loading="autoSyncLoading" @click="toggleAutoSync"></a-switch>
                 <img class="icon sync-all-icon" :src="syncAllIcon" alt="" @click="syncAllDevice" />
-                <img class="icon help-icon" :src="helpIcon" alt="" @click="loadHelp" />
                 <div class="wrap" @click="goSettingsPage">
                     <img class="icon settings-icon" :src="settingsIcon" alt="" />
                     <img :src="warningIcon" alt="" v-if="!deviceStore.isMqttConnected" class="disconnect-warning-icon" />
@@ -87,7 +86,6 @@ const sseStore = useSseStore();
 
 // 图片资源
 const syncAllIcon = getAssetsFile('images/sync_all_device_icon.png');
-const helpIcon = getAssetsFile('images/help_icon.png');
 const settingsIcon = getAssetsFile('images/settings_icon.png');
 const unsupportedIcon = getAssetsFile('images/device/unknown_icon.png');
 const warningIcon = getAssetsFile('images/warning_icon.png');
@@ -158,12 +156,12 @@ const syncAllDevice = async () => {
         const response = await syncAll();
         console.log('同步所有设备结果：', response);
         if (response.error !== 0) {
-            syncAllDeviceLoading.value = false;
             // 缺少token凭证
             if (response.error === 602) {
                 etcStore.setGetAccessTokenVisible(true);
                 return;
             }
+            syncAllDeviceLoading.value = false;
             // mqtt连接断开
             if (response.error === 603) {
                 deviceStore.updateIsMqttConnected(false);
@@ -171,6 +169,7 @@ const syncAllDevice = async () => {
             syncType.value = '';
             return message.error(t('ERROR[500]'));
         }
+        message.success(t('DEVICE_SYNC_SUCCESS', { number: response.data.successList.length }));
         // 拉取最新设备列表
         await deviceStore.getDeviceList();
         syncAllDeviceLoading.value = false;
@@ -204,11 +203,6 @@ const getTokenSuccessHandler = async () => {
     }
 };
 
-// 加载帮助手册
-const loadHelp = () => {
-    console.log('加载帮助手册');
-};
-
 // 跳转配置mqtt
 const goSettingsPage = () => {
     router.push({ name: 'mqttSettings' });
@@ -223,12 +217,12 @@ const sync = async (id: string) => {
         syncType.value = 'sync';
         const response = await syncSingle(id);
         if (response.error !== 0) {
-            device.syncing = false;
             // 缺少token凭证
             if (response.error === 602) {
                 etcStore.setGetAccessTokenVisible(true);
                 return;
             }
+            device.syncing = false;
             if (response.error === 603) {
                 deviceStore.updateIsMqttConnected(false);
             }
@@ -236,6 +230,7 @@ const sync = async (id: string) => {
             syncType.value = '';
             return message.error(t('ERROR[500]'));
         }
+        message.success(t('SYNC_SUCCESS'));
         // 拉取最新设备列表
         await deviceStore.getDeviceList();
         device.syncing = false;
@@ -258,12 +253,12 @@ const unsync = async (id: string) => {
         syncType.value = 'unsync';
         const response = await unsyncSingle(id);
         if (response.error !== 0) {
-            device.syncing = false;
             // 缺少token凭证
             if (response.error === 602) {
                 etcStore.setGetAccessTokenVisible(true);
                 return;
             }
+            device.syncing = false;
             if (response.error === 603) {
                 deviceStore.updateIsMqttConnected(false);
             }
@@ -271,6 +266,7 @@ const unsync = async (id: string) => {
             syncType.value = '';
             return message.error(t('ERROR[500]'));
         }
+        message.success(t('CANCEL_SYNC_SUCCESS'));
         // 拉取最新设备列表
         await deviceStore.getDeviceList();
         device.syncing = false;

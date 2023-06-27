@@ -8,6 +8,8 @@ const en = {
     DEVICE_OFFLINE: 'offline',
     SYNC: 'Sync',
     CANCELING_SYNC: 'Unsync',
+    SYNC_SUCCESS: 'Success',
+    CANCEL_SYNC_SUCCESS: 'Success',
     NO_DATA: 'No Data',
     SYNCING_ALL_DEVICE_TIP: 'Syncing all devices, please wait',
     DEVICE_LIST_DISCONNECT_TIP: 'Unable to connect to the MQTT broker. Please click Settings to reconfigure the MQTT broker.',
@@ -30,6 +32,23 @@ const en = {
         USERNAME: 'The username for the MQTT broker (If you have set one)',
         PASSWORD: 'MQTT broker password (If you have set one)',
     },
+    SETTINGS_TIP_MODAL: {
+        MAIN_TITLE: 'Tasmota Add-on allows you to sync your Tasmota devices to iHost for control and management.',
+        PREPARE_WORK: {
+            TITLE: 'You need following preparations before using:',
+            STEP1: 'Your devices have flashed the Tasmota firmware.',
+            STEP2: 'Please make sure “MQTT Enable” is checked in Configuration->Configure Other.',
+            STEP3: 'Have a functional MQTT broker ready. You can install an MQTT broker like mosquito in iHost.',
+            STEP4: 'Please ensure the value in setOption19 is 0.',
+            DOC_LINK: 'Click to view the reference file>',
+        },
+        SUPPORTED_DEVICE: {
+            TITLE: 'Currently supported device types:',
+            CONTENT: 'Switch、Plug',
+        },
+        FOOTER_TIP: 'Please click "Start" below to configure MQTT broker if these preparations are completed.',
+        CONFIRM: 'Start',
+    },
     GET_ACCESS_TOKEN_TIP_TITLE: 'Please follow steps below to get iHost access token: ',
     GET_ACCESS_TOKEN_TIP1: ' Enter this Add-on page in iHost dashboard and confirm "Get iHost access token"',
     GET_ACCESS_TOKEN_TIP2: ' Back to current page and click "Complete"',
@@ -37,6 +56,7 @@ const en = {
     CANCEL: 'Cancel',
     SAVE: 'Save',
     GET_TOKEN_ERROR: 'Failed to get iHost access token, please try again.',
+    DEVICE_SYNC_SUCCESS: '{number} devices synced successfully',
 };
 
 export default en;
