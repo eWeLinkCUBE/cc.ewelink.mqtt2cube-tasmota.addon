@@ -41,7 +41,7 @@ export default async function openControlDevice(req: Request, res: Response) {
                 const { mqttTopics } = deviceSetting;
                 if (channelLength === 1) {
                     const powerState = iHostState.power.powerState;
-                    const publishRes = await mqttClient.publish(`${mqttTopics.command_topic}/POWER`, powerState);
+                    const publishRes = await mqttClient.publish(`${mqttTopics.command_topic}POWER`, powerState);
                     if (publishRes === 0) {
                         logger.error(`publish mqtt topic failed!`);
                         return res.json(createFailRes(message_id));
@@ -54,7 +54,7 @@ export default async function openControlDevice(req: Request, res: Response) {
                     const powerObj = _.get(iHostState, ['power', 'powerState']);
                     if (!toggleObj && !powerObj) continue;
                     const power = toggleObj || powerObj;
-                    const publishRes = await mqttClient.publish(`${mqttTopics.command_topic}/POWER${i}`, power);
+                    const publishRes = await mqttClient.publish(`${mqttTopics.command_topic}POWER${i}`, power);
                     if (publishRes === 0) {
                         logger.error(`publish mqtt topic failed!`);
                         return res.json(createFailRes(message_id));
