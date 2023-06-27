@@ -46,7 +46,7 @@ async function handleMQTTReceiveMsg(eventData: IMqttReceiveEvent<any>) {
         return;
     }
 
-    const deviceSettingList = getDeviceSettingList()
+    const deviceSettingList = getDeviceSettingList();
     for (const deviceSetting of deviceSettingList) {
         const func = _.get(DEVICE_TYPE_TO_FUNC_MAPPING, deviceSetting.display_category);
         if (!func) return;

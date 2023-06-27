@@ -5,6 +5,7 @@ import mqtt, { IClientOptions, IPublishPacket, IClientSubscribeOptions } from 'm
 import { IMqttParams, IMqttReceiveEvent } from '../interface/IMqtt';
 import { getMQTTConnected, updateMQTTConnected } from '../../utils/tmp';
 import SSE from './sse';
+import { allTasmotaDeviceOffline } from '../../utils/device';
 
 
 
@@ -108,8 +109,8 @@ class MQTT {
                 logger.error('[mqtt] mqtt is disconnect');
             })
 
-            this.client.on('error', (err) => {
-                logger.error(`[mqtt] mqtt connect error => ${err} ${hasInit}`);
+            this.client.on('error', async (err) => {
+                logger.error(`[mqtt] mqtt connect error => ${err.message} ${hasInit}`);
                 const mqttConnected = getMQTTConnected();
                 if (mqttConnected) {
                     SSE.send({
@@ -117,6 +118,7 @@ class MQTT {
                         data: {}
                     })
                     updateMQTTConnected(false);
+                    await allTasmotaDeviceOffline();
                 }
 
                 if (hasInit) {
@@ -202,7 +204,6 @@ class MQTT {
 
         // 处理消息
         await mqttUtils.handleMQTTReceiveMsg(eventData);
-
 
         // if (mqttTopicParser.isStorageAvailablity(topic)) this.eventBus.emitStorageAvailablity(eventData);
         // else if (mqttTopicParser.isStorageInformation(topic)) this.eventBus.emitStorageInformation(eventData);
