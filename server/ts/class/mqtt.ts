@@ -5,7 +5,7 @@ import mqtt, { IClientOptions, IPublishPacket, IClientSubscribeOptions } from 'm
 import { IMqttParams, IMqttReceiveEvent } from '../interface/IMqtt';
 import { getMQTTConnected, updateMQTTConnected } from '../../utils/tmp';
 import SSE from './sse';
-import { allTasmotaDeviceOffline } from '../../utils/device';
+import { allTasmotaDeviceOnOrOffline } from '../../utils/device';
 
 
 
@@ -83,6 +83,7 @@ class MQTT {
                         data: {}
                     })
                     updateMQTTConnected(true);
+                    await allTasmotaDeviceOnOrOffline('online');
                 }
                 resolve(1);
             });
@@ -118,7 +119,7 @@ class MQTT {
                         data: {}
                     })
                     updateMQTTConnected(false);
-                    await allTasmotaDeviceOffline();
+                    await allTasmotaDeviceOnOrOffline('offline');
                 }
 
                 if (hasInit) {

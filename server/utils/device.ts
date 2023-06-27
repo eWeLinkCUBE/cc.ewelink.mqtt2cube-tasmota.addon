@@ -3,7 +3,7 @@ import logger from "../log";
 import { v4 as uuid } from 'uuid';
 import { getIHostSyncDeviceList, syncDeviceOnlineToIHost } from "../cube-api/api";
 import IHostDevice from "../ts/interface/IHostDevice";
-import { getDeviceSettingList } from "./tmp";
+import { TDeviceSetting, getDeviceSettingList } from "./tmp";
 import { TAG_DATA_NAME } from '../const';
 
 /**
@@ -18,11 +18,11 @@ export function checkTasmotaDeviceInIHost(deviceList: IHostDevice[], mac: string
 
 
 /**
- * @description 离线所有tasmota同步设备
+ * @description 离线与在线所有tasmota同步设备
  * @export
  * @returns {*} 
  */
-export async function allTasmotaDeviceOffline() {
+export async function allTasmotaDeviceOnOrOffline(type: 'online' | 'offline') {
     const res = await getIHostSyncDeviceList();
     if (res.error !== 0) {
         logger.error(`[allTasmotaDeviceOffline] get iHost sync device list fail! => ${JSON.stringify(res)}`);
@@ -32,15 +32,22 @@ export async function allTasmotaDeviceOffline() {
 
     const deviceList = res.data!.device_list
     const deviceSettingList = getDeviceSettingList();
-    const syncedDevice = deviceList.filter(device => {
-        return deviceSettingList.some(deviceSetting => JSON.stringify(device.tags).includes(deviceSetting.mac));
+    const syncedDevices: { device: IHostDevice, deviceSetting: TDeviceSetting }[] = [];
+    deviceList.forEach(device => {
+        const deviceSetting = deviceSettingList.find(deviceSetting => JSON.stringify(device.tags).includes(deviceSetting.mac));
+        if (deviceSetting) {
+            syncedDevices.push({
+                device,
+                deviceSetting
+            })
+        }
     });
 
-    logger.info(`[allTasmotaDeviceOffline] all synced device ${JSON.stringify(syncedDevice)}`);
+    logger.info(`[allTasmotaDeviceOffline] all synced device ${JSON.stringify(syncedDevices)}`);
 
 
-    for (const device of syncedDevice) {
-        const third_serial_number = _.get(device, ['tags', TAG_DATA_NAME, 'deviceId'])
+    for (const devices of syncedDevices) {
+        const { device, deviceSetting } = devices;
         const params = {
             event: {
                 header: {
@@ -50,16 +57,16 @@ export async function allTasmotaDeviceOffline() {
                 },
                 endpoint: {
                     serial_number: device.serial_number,
-                    third_serial_number: third_serial_number,
+                    third_serial_number: deviceSetting.mac,
                 },
                 payload: {
-                    online: false
+                    online: type === 'offline' ? false : deviceSetting.online
                 },
             },
         }
 
-        logger.info(`[allTasmotaDeviceOffline] device ${third_serial_number} offline params ${JSON.stringify(params)}`);
+        logger.info(`[allTasmotaDeviceOffline] device ${deviceSetting.mac} offline params ${JSON.stringify(params)}`);
         const syncOnlineRes = await syncDeviceOnlineToIHost(params)
-        logger.info(`[allTasmotaDeviceOffline] device ${third_serial_number} offline result ${JSON.stringify(syncOnlineRes)}`)
+        logger.info(`[allTasmotaDeviceOffline] device ${deviceSetting.mac} offline result ${JSON.stringify(syncOnlineRes)}`)
     }
 }
