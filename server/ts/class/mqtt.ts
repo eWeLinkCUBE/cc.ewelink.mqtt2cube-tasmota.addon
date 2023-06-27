@@ -57,7 +57,7 @@ class MQTT {
     async connect() {
         const { username = "", pwd = "", host, port } = this.initParams
         const mqttUrl = `mqtt://${host}:${port}`;
-        logger.info(`[mqtt] Connecting to MQTT server at ${mqttUrl}`);
+        logger.error(`[mqtt] Connecting to MQTT server at ${mqttUrl}`);
         let hasInit = false;
 
         return new Promise((resolve, reject) => {
@@ -65,13 +65,14 @@ class MQTT {
                 connectOption.username = username;
                 connectOption.password = pwd;
             }
-            logger.info(`[mqtt] connect option => ${JSON.stringify(connectOption)}`)
+            logger.error(`[mqtt] connect option => ${JSON.stringify(connectOption)}`)
             this.client = mqtt.connect(mqttUrl, connectOption);
             this.client.setMaxListeners(0);
 
             const onConnect = this.#onConnect.bind(this);
             this.client.on('connect', async () => {
                 logger.error('[mqtt] connected to MQTT server!!!!');
+                // logger.error('[mqtt] mqtt is reconnecting');
                 await onConnect();
                 hasInit = true;
                 const mqttConnected = getMQTTConnected();
@@ -84,6 +85,28 @@ class MQTT {
                 }
                 resolve(1);
             });
+
+            this.client.on('reconnect', () => {
+                logger.error('[mqtt] mqtt is reconnecting');
+            })
+
+            this.client.on('offline', (err: any) => {
+                logger.error('[mqtt] mqtt is offline', err);
+            })
+
+
+            this.client.on('close', () => {
+                logger.error('[mqtt] mqtt is close');
+            })
+
+            this.client.on('end', () => {
+                logger.error('[mqtt] mqtt is end');
+            })
+
+
+            this.client.on('disconnect', () => {
+                logger.error('[mqtt] mqtt is disconnect');
+            })
 
             this.client.on('error', (err) => {
                 logger.error(`[mqtt] mqtt connect error => ${err} ${hasInit}`);
@@ -114,6 +137,7 @@ class MQTT {
      * @memberof MQTT
      */
     disconnect() {
+        logger.error(`[mqtt] mqtt disconnect is called!!!!!`)
         return this.client!.end(true);
     }
 
@@ -134,6 +158,7 @@ class MQTT {
         }
 
         this.connectionTimer = setInterval(() => {
+            logger.error(`here here`);
             if (this.client!.reconnecting) {
                 logger.error('[mqtt] Not connected to MQTT server!');
             }
@@ -333,4 +358,4 @@ export async function getMQTTClient(): Promise<MQTT | null> {
     return null;
 }
 
-export default mqttClient;
+// export default mqttClient;

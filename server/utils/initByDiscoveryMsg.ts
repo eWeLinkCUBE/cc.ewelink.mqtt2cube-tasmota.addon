@@ -9,7 +9,7 @@ import logger from '../log';
 import { TAG_DATA_NAME } from '../const';
 import mqttUtils from './mqtt';
 import { IMqttReceiveEvent } from '../ts/interface/IMqtt';
-import mqttClient from '../ts/class/mqtt';
+import { getMQTTClient } from '../ts/class/mqtt';
 import db from './db';
 import { generateIHostDevice } from '../services/syncOneDevice';
 import SSE from '../ts/class/sse';
@@ -146,6 +146,7 @@ export async function initByDiscoveryMsg(eventData: IMqttReceiveEvent<IDiscovery
 
 
     // 6. 推送topic查询设备状态
+    const mqttClient = await getMQTTClient();
     if (!mqttClient) {
         logger.error(`[initByDiscoveryMsg] mqtt client doesn't exist`);
         return;
