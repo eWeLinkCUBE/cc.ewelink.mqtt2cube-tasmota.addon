@@ -38,7 +38,7 @@ const cn = {
             TITLE: '使用 tasmota 请确认已提前做好准备工作：',
             STEP1: '您的设备已经刷好 tasmota 固件。',
             STEP2: '请确保设备的 Configuration>Configure Other 中的 MQTT Enable 已经勾选。',
-            STEP3: '一个就绪的 MQTT broker，您也可以在 iHost 中安装一个 MQTT broker 。例如：mosquitto',
+            STEP3: '一个就绪的 MQTT broker。',
             STEP4: '确认设备的 setOption 19 设为 0，',
             DOC_LINK: '参考文档>',
         },

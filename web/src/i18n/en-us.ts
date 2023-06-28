@@ -38,7 +38,7 @@ const en = {
             TITLE: 'You need following preparations before using:',
             STEP1: 'Your devices have flashed the Tasmota firmware.',
             STEP2: 'Please make sure “MQTT Enable” is checked in Configuration->Configure Other.',
-            STEP3: 'Have a functional MQTT broker ready. You can install an MQTT broker like mosquito in iHost.',
+            STEP3: 'Have a functional MQTT broker ready.',
             STEP4: 'Please ensure the value in setOption19 is 0.',
             DOC_LINK: 'Click to view the reference file>',
         },
