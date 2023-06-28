@@ -372,16 +372,16 @@ onMounted(async () => {
         .device-list-container {
             height: 100%;
             display: grid;
-            grid-template-columns: repeat(3, 1fr);
+            grid-template-columns: repeat(auto-fit, minmax(320px, 1fr));
             grid-gap: 16px;
-            justify-content: center;
+            justify-content: space-between;
             overflow: hidden scroll;
             padding: 2px 8px 32px 16px;
             .device-item {
                 padding: 16px 12px;
                 border-radius: 10px;
                 box-shadow: 0px 0px 6px -3px black;
-                min-width: 320px;
+                // min-width: 320px;
                 display: flex;
                 align-items: center;
                 justify-content: space-between;
@@ -485,14 +485,37 @@ onMounted(async () => {
                 background: transparent;
             }
         }
-        @media screen and (min-width: 688px) and (max-width: 1024px) {
+        @media screen and (max-width: 2032px) {
             .device-list-container {
-                grid-template-columns: repeat(2, 1fr);
+                grid-template-columns: repeat(6, 1fr);
+            }
+        }
+        @media screen and (max-width: 1696px) {
+            .device-list-container {
+                grid-template-columns: repeat(5, 1fr);
+            }
+        }
+        @media screen and (max-width: 1360px) {
+            .device-list-container {
+                grid-template-columns: repeat(4, 1fr);
+            }
+        }
+        @media screen and (max-width: 1024px) {
+            .device-list-container {
+                grid-template-columns: repeat(3, 1fr);
             }
         }
         @media screen and (max-width: 688px) {
             .device-list-container {
+                grid-template-columns: repeat(2, 1fr);
+            }
+        }
+        @media screen and (max-width: 448px) {
+            .device-list-container {
                 grid-template-columns: repeat(1, 1fr);
+                .device-item {
+                    min-width: 320px;
+                }
             }
         }
         .no-device {

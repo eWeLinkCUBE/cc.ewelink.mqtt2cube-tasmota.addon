@@ -155,6 +155,20 @@ const save = async () => {
         if (option.key === 'port' && !/^\d+$/.test(option.value.trim())) {
             return message.warning(t('SETTINGS_SAVE_VALIDATE_PORT_NUMBER'));
         }
+        switch (option.key) {
+            case 'host':
+                params[option.key] = option.value.trim().split(/\s+/).join('');
+                break;
+            case 'port':
+                params[option.key] = option.value.trim().split(/\s+/).join('');
+                break;
+            case 'pwd':
+                params[option.key] = encryptAES(option.value.trim(), APP_SECRET);
+                break;
+            default:
+                params[option.key] = option.value.trim();
+                break;
+        }
         params[option.key] = option.key === 'pwd' ? encryptAES(option.value.trim(), APP_SECRET) : option.value.trim();
     }
     console.log('配置数据：', params);
