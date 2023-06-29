@@ -372,7 +372,7 @@ onMounted(async () => {
         .device-list-container {
             height: 100%;
             display: grid;
-            grid-template-columns: repeat(auto-fit, minmax(320px, 1fr));
+            grid-template-columns: repeat(auto-fit, 320px);
             grid-gap: 16px;
             justify-content: space-between;
             overflow: hidden scroll;
@@ -485,24 +485,39 @@ onMounted(async () => {
                 background: transparent;
             }
         }
-        @media screen and (max-width: 2032px) {
+        @media screen and (max-width: 3040px) {
+            .device-list-container {
+                grid-template-columns: repeat(8, 1fr);
+            }
+        }
+        @media screen and (max-width: 2704px) {
+            .device-list-container {
+                grid-template-columns: repeat(7, 1fr);
+            }
+        }
+        @media screen and (max-width: 2368px) {
             .device-list-container {
                 grid-template-columns: repeat(6, 1fr);
             }
         }
-        @media screen and (max-width: 1696px) {
+        @media screen and (max-width: 2032px) {
             .device-list-container {
                 grid-template-columns: repeat(5, 1fr);
             }
         }
-        @media screen and (max-width: 1360px) {
+        @media screen and (max-width: 1696px) {
             .device-list-container {
                 grid-template-columns: repeat(4, 1fr);
             }
         }
-        @media screen and (max-width: 1024px) {
+        @media screen and (max-width: 1360px) {
             .device-list-container {
                 grid-template-columns: repeat(3, 1fr);
+            }
+        }
+        @media screen and (max-width: 1024px) {
+            .device-list-container {
+                grid-template-columns: repeat(2, 1fr);
             }
         }
         @media screen and (max-width: 688px) {
@@ -510,7 +525,7 @@ onMounted(async () => {
                 grid-template-columns: repeat(2, 1fr);
             }
         }
-        @media screen and (max-width: 448px) {
+        @media screen and (max-width: 540px) {
             .device-list-container {
                 grid-template-columns: repeat(1, 1fr);
                 .device-item {
