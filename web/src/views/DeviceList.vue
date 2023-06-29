@@ -380,7 +380,6 @@ onMounted(async () => {
             display: grid;
             grid-template-columns: repeat(auto-fit, 320px);
             grid-gap: 16px;
-            justify-content: space-between;
             overflow: hidden scroll;
             padding: 2px 8px 32px 16px;
             .device-item {
