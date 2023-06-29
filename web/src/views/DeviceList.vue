@@ -9,7 +9,7 @@
             <div class="right">
                 <span class="auto-sync-tip">{{ t('AUTO_SYNC_TIP') }}</span>
                 <a-switch v-model:checked="autoSyncSwitch" :loading="autoSyncLoading" @click="toggleAutoSync"></a-switch>
-                <img class="icon sync-all-icon" :src="syncAllIcon" alt="" @click="syncAllDevice" />
+                <img :class="!deviceStore.isMqttConnected ? 'icon sync-all-icon sync-all-icon-disabled' : 'icon sync-all-icon'" :src="syncAllIcon" alt="" @click="syncAllDevice" />
                 <div class="wrap" @click="goSettingsPage">
                     <img class="icon settings-icon" :src="settingsIcon" alt="" />
                     <img :src="warningIcon" alt="" v-if="!deviceStore.isMqttConnected" class="disconnect-warning-icon" />
@@ -150,6 +150,7 @@ const getAutoSyncStatus = async () => {
 
 // 同步所有设备
 const syncAllDevice = async () => {
+    if (!deviceStore.isMqttConnected) return;
     try {
         syncAllDeviceLoading.value = true;
         syncType.value = 'all';
@@ -345,6 +346,11 @@ onMounted(async () => {
             }
             .sync-all-icon {
                 margin-left: 40px;
+            }
+            .sync-all-icon-disabled {
+                // &:hover {
+                cursor: not-allowed;
+                // }
             }
             .wrap {
                 position: relative;
