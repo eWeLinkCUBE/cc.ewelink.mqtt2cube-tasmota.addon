@@ -61,7 +61,6 @@ const goMqttSettings = () => {
         flex-direction: column;
         overflow: hidden;
         .body {
-            flex: 1;
             display: flex;
             flex-direction: column;
             border-radius: 8px;
@@ -69,7 +68,6 @@ const goMqttSettings = () => {
             font-weight: 400;
             background-color: white;
             padding: 20px 16px;
-            overflow: auto scroll;
             .main-title {
                 font-size: 16px;
                 font-weight: 500;
@@ -126,6 +124,12 @@ const goMqttSettings = () => {
             ::-webkit-scrollbar-track,
             ::-webkit-scrollbar-track-piece {
                 background: transparent;
+            }
+        }
+        @media screen and (max-height: 410px) {
+            .body {
+                flex: 1;
+                overflow: auto scroll;
             }
         }
         .footer {
