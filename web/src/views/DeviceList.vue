@@ -62,6 +62,7 @@
             v-model:getAccessTokenVisible="etcStore.getAccessTokenVisible"
             @getTokenSuccess="getTokenSuccessHandler"
             @hideModal="() => etcStore.setGetAccessTokenVisible(false)"
+            @queryTimeUp="queryTokenTimeUpHandler"
         ></GetAccessTokenModalVue>
     </div>
 </template>
@@ -188,14 +189,16 @@ const syncAllDevice = async () => {
 const getTokenSuccessHandler = async () => {
     // 先隐藏弹框组件
     etcStore.setGetAccessTokenVisible(false);
-    // 同步所有设备
     switch (syncType.value) {
+        // 同步所有设备
         case 'all':
             await syncAllDevice();
             break;
+        // 同步单个设备
         case 'sync':
             await sync(syncId.value);
             break;
+        // 取消同步单个设备
         case 'unsync':
             await unsync(syncId.value);
             break;
@@ -279,6 +282,39 @@ const unsync = async (id: string) => {
         syncId.value = '';
         message.error(t('ERROR[500]'));
     }
+};
+
+// 轮询 token 超过三分钟，取消上次操作的 loading状态
+const queryTokenTimeUpHandler = () => {
+    let device: IDeviceInfo | null = null;
+    console.log('syncType:', syncType.value);
+    console.log('syncId:', syncId.value);
+    if (syncId.value) {
+        device = deviceStore.deviceList.find((device) => device.id === syncId.value)!;
+        console.log('device:', device);
+    }
+    switch (syncType.value) {
+        // 同步所有设备
+        case 'all':
+            syncAllDeviceLoading.value = false;
+            break;
+        // 同步单个设备
+        case 'sync':
+            if (device) {
+                device.syncing = false;
+            }
+            break;
+        // 取消同步单个设备
+        case 'unsync':
+            if (device) {
+                device.syncing = false;
+            }
+            break;
+        default:
+            console.log('syncType:', syncType.value);
+            break;
+    }
+    etcStore.setGetAccessTokenVisible(false);
 };
 
 onMounted(async () => {

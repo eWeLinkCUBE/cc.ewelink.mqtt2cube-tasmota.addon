@@ -50,7 +50,7 @@ const props = defineProps({
         default: false,
     },
 });
-const emits = defineEmits(['getTokenSuccess', 'hideModal']);
+const emits = defineEmits(['getTokenSuccess', 'hideModal', 'queryTimeUp']);
 const getAccessTokenTimer = ref<any>();
 const getAccessTokenNumber = ref<number>(0);
 const isIframe = computed(() => {
@@ -87,8 +87,10 @@ watch(
     () => getAccessTokenNumber.value,
     (newValue, oldValue) => {
         if (newValue >= 18) {
+            console.log('轮询超过三分钟');
             clearInterval(getAccessTokenTimer.value);
             getAccessTokenNumber.value = 0;
+            emits('queryTimeUp');
         }
     }
 );
