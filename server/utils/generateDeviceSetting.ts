@@ -26,7 +26,7 @@ export const DEVICE_SETTINGS: IDeviceSetting = {
  * @returns {*}  {INotSupport}
  */
 function getNotSupportDeviceSetting(discovery: IDiscoveryMsg): INotSupport {
-    const { dn, mac, sw, md, t } = discovery;
+    const { dn, mac, sw, md, t, so } = discovery;
     const notSupportSetting: INotSupport = {
         display_category: EDeviceType.UNKNOWN,
         name: dn,
@@ -40,6 +40,7 @@ function getNotSupportDeviceSetting(discovery: IDiscoveryMsg): INotSupport {
             availability_online: discovery['onln'],
             fallback_topic: getFallbackTopicFromMac(mac)
         },
+        so,
         sw_version: sw
     }
 
@@ -53,7 +54,7 @@ function getNotSupportDeviceSetting(discovery: IDiscoveryMsg): INotSupport {
  * @returns {*}  {ISwitch}
  */
 function getSwitchSetting(discovery: IDiscoveryMsg): ISwitch {
-    const { rl, mac, fn, dn, ofln, onln, sw, md, t } = discovery;
+    const { rl, mac, fn, dn, ofln, onln, sw, md, t, so } = discovery;
 
     /** 通道数量 */
     let channelNum = 0;
@@ -70,11 +71,16 @@ function getSwitchSetting(discovery: IDiscoveryMsg): ISwitch {
             powerState: "off"
         }
     }
+    /** 设备的tags */
     let tags: any = {
         [TAG_DATA_NAME]: {
             deviceId: mac,
         }
     }
+    /** power topic 用于setOption4为true时使用 */
+    const power_topics: string[] = [];
+    /** 获取 state topic 前缀 */
+    const topicState = getTopicState(discovery)
 
 
     // 1.判断设备有几个通道
@@ -135,9 +141,12 @@ function getSwitchSetting(discovery: IDiscoveryMsg): ISwitch {
                 })
             }
 
+            power_topics.push(`${topicState}POWER${curChannel}`);
 
             logger.info(`[getSwitchSetting] current ${curChannel} state is ${JSON.stringify(state)}`)
         }
+    } else {
+        power_topics.push(`${topicState}POWER`);
     }
 
 
@@ -163,7 +172,9 @@ function getSwitchSetting(discovery: IDiscoveryMsg): ISwitch {
             state_power_on: getStatePowerOn(discovery),
             state_topic: getTopicTelemetryState(discovery),
             fallback_topic: getFallbackTopicFromMac(mac),
+            power_topics
         },
+        so,
         sw_version: sw
     }
 

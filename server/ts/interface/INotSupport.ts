@@ -1,4 +1,5 @@
 import EDeviceType from "../enum/EDeviceType";
+import { ISetOptions } from "./IDiscoveryMsg";
 
 export interface INotSupport {
     /** 类别 */
@@ -22,7 +23,9 @@ export interface INotSupport {
         availability_online: string;
         /** fallback topic */
         fallback_topic: string;
-    }
+    },
+    /** setOption列表 */
+    so: ISetOptions;
     /** 软件，即Tasmota版本 tasmota_config.sw */
     sw_version: string
 }

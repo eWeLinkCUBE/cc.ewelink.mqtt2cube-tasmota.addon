@@ -1,4 +1,5 @@
 import EDeviceType from "../enum/EDeviceType"
+import { ISetOptions } from "./IDiscoveryMsg"
 
 export type ICapability = IToggleCapability | INormalCapability
 
@@ -65,7 +66,11 @@ export interface ISwitch {
         state_topic: string;
         /** fallback topic eg: cmnd/DVES_CC263B_fb/*/
         fallback_topic: string;
-    }
+        /** power状态的topic，只有当so4为1时才会使用 */
+        power_topics: string[];
+    },
+    /** setOption列表 */
+    so: ISetOptions;
     /** 软件，即Tasmota版本 tasmota_config.sw */
     sw_version: string
 }
