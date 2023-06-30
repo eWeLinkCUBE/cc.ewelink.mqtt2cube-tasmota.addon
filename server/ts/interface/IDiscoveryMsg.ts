@@ -55,7 +55,7 @@ export interface IDiscoveryMsg {
 }
 
 /** 会影响discovery的部分配置 */
-interface ISetOptions {
+export interface ISetOptions {
     /** Return MQTT response as RESULT or %COMMAND% */
     '4': number;
     /** Swap button single and double press functionality */

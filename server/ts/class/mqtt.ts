@@ -1,4 +1,5 @@
 import db from '../../utils/db';
+import { v4 as uuid } from 'uuid';
 import logger from '../../log';
 import mqttUtils from '../../utils/mqtt';
 import mqtt, { IClientOptions, IPublishPacket, IClientSubscribeOptions } from 'mqtt';
@@ -7,13 +8,10 @@ import { getMQTTConnected, updateMQTTConnected } from '../../utils/tmp';
 import SSE from './sse';
 import { allTasmotaDeviceOnOrOffline } from '../../utils/device';
 
-
-
 const MQTT_BROKER_KEEPALIVE = process.env.env === 'dev' ? 5 : 60;
-const MQTT_HOST_CLIENT_ID = 'tasmota-add-on';
 
 const connectOption: IClientOptions = {
-    clientId: MQTT_HOST_CLIENT_ID,
+    clientId: '',
     keepalive: MQTT_BROKER_KEEPALIVE,
     clean: true,
     protocolId: 'MQTT',
@@ -62,6 +60,9 @@ class MQTT {
         let hasInit = false;
 
         return new Promise((resolve, reject) => {
+            const clientId = uuid();
+            connectOption.clientId = clientId;
+
             if (username && pwd) {
                 connectOption.username = username;
                 connectOption.password = pwd;
@@ -106,9 +107,19 @@ class MQTT {
             })
 
 
-            this.client.on('disconnect', () => {
-                logger.error('[mqtt] mqtt is disconnect');
+            this.client.on('disconnect', (packet) => {
+                logger.error('[mqtt] mqtt is disconnect', JSON.stringify(packet));
             })
+
+            this.client.on('packetreceive', (packet) => {
+                logger.error('[mqtt] mqtt is packetreceive', JSON.stringify(packet));
+            })
+
+            this.client.on('packetsend', (packet) => {
+                logger.error('[mqtt] mqtt is packetreceive', JSON.stringify(packet));
+            })
+
+
 
             this.client.on('error', async (err) => {
                 logger.error(`[mqtt] mqtt connect error => ${err.message} ${hasInit}`);
@@ -161,7 +172,6 @@ class MQTT {
         }
 
         this.connectionTimer = setInterval(() => {
-            logger.error(`here here`);
             if (this.client!.reconnecting) {
                 logger.error('[mqtt] Not connected to MQTT server!');
             }
@@ -205,30 +215,7 @@ class MQTT {
 
         // 处理消息
         await mqttUtils.handleMQTTReceiveMsg(eventData);
-
-        // if (mqttTopicParser.isStorageAvailablity(topic)) this.eventBus.emitStorageAvailablity(eventData);
-        // else if (mqttTopicParser.isStorageInformation(topic)) this.eventBus.emitStorageInformation(eventData);
-        // else if (mqttTopicParser.isStorageUpdatedState(topic)) this.eventBus.emitStorageUpdatedState(eventData);
-        // else if (mqttTopicParser.isStorageFormatResult(topic)) this.eventBus.emitStorageFormatResult(eventData);
-        // else if (mqttTopicParser.isStorageDiscovered(topic)) this.eventBus.emitStorageDiscovered(eventData);
-        // else if (mqttTopicParser.isStorageDeleted(topic)) this.eventBus.emitStorageDeleted(eventData);
-        // else if (mqttTopicParser.isSystemLogUpdate(topic)) this.eventBus.emitSystemLogUpdate(eventData);
-        // else if (mqttTopicParser.isBridgeAccesstoken(topic)) {
-        //     this.cache.tokenInfo = eventData?.data;
-        //     this.eventBus.emitBridgeUpdatedAccesstoken(eventData);
-        // } else if (mqttTopicParser.isBridgeTimezone(topic)) {
-        //     this.cache.timezoneInfo = eventData?.data;
-        //     this.eventBus.emitSystemTimeZoneUpdate(eventData);
-        // }
     }
-
-    // async publishStateOnline() {
-    //     await this.publish(
-    //         `${MQTT_HOST_BASE_TOPIC}/system/availability`,
-    //         JSON.stringify({ online: true }),
-    //         { retain: true, qos: 2 }
-    //     );
-    // }
 
     /**
      * 订阅topic
