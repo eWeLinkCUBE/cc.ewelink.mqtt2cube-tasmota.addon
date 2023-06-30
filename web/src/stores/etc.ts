@@ -5,6 +5,7 @@ interface IEtcStoreState {
     language: 'zh-cn' | 'en-us';
     getAccessTokenVisible: boolean;
     isSetMqtt: boolean;
+    isCheckHelper: boolean;
 }
 
 export const useEtcStore = defineStore('user', {
@@ -13,6 +14,7 @@ export const useEtcStore = defineStore('user', {
             language: 'zh-cn',
             getAccessTokenVisible: false,
             isSetMqtt: false,
+            isCheckHelper: false,
         };
     },
     actions: {
@@ -25,6 +27,9 @@ export const useEtcStore = defineStore('user', {
         },
         updateIsSetMqtt(isSet: boolean) {
             this.isSetMqtt = isSet;
+        },
+        updateIsCheckHelper(isCheck: boolean) {
+            this.isCheckHelper = isCheck;
         },
     },
     persist: true,

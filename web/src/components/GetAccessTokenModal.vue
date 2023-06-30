@@ -76,6 +76,7 @@ watch(
     () => props.getAccessTokenVisible,
     (newValue, oldValue) => {
         if (newValue) {
+            console.log(11111);
             getIhostAccessToken();
         } else {
             clearInterval(getAccessTokenTimer.value);

@@ -78,6 +78,7 @@ import { autoSync, getAutoSync, getDevices, syncAll, syncSingle, unsyncSingle } 
 import { message } from 'ant-design-vue';
 import GetAccessTokenModalVue from '../components/GetAccessTokenModal.vue';
 import router from '@/router';
+import ERouterName from '@/ts/enum/ERouterName';
 
 // pinia
 const etcStore = useEtcStore();
@@ -206,7 +207,7 @@ const getTokenSuccessHandler = async () => {
 
 // 跳转配置mqtt
 const goSettingsPage = () => {
-    router.push({ name: 'mqttSettings' });
+    router.push({ name: ERouterName.MQTT_SETTINGS });
 };
 
 // 同步单个设备
