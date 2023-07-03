@@ -61,7 +61,7 @@
         <GetAccessTokenModalVue
             v-model:getAccessTokenVisible="etcStore.getAccessTokenVisible"
             @getTokenSuccess="getTokenSuccessHandler"
-            @hideModal="() => etcStore.setGetAccessTokenVisible(false)"
+            @hideModal="cancelGetTokenHandler"
             @queryTimeUp="queryTokenTimeUpHandler"
         ></GetAccessTokenModalVue>
     </div>
@@ -104,7 +104,7 @@ const autoSyncLoading = ref(true);
 const syncAllDeviceLoading = ref(false);
 
 // 数据
-const syncType = ref<'all' | 'sync' | 'unsync' | ''>('');
+const syncType = ref<'all' | 'sync' | 'unsync' | 'auto' | ''>('');
 const syncId = ref('');
 
 // 方法/回调
@@ -112,8 +112,16 @@ const syncId = ref('');
 const toggleAutoSync = async (isOn: boolean) => {
     try {
         autoSyncLoading.value = true;
+        syncType.value = 'auto';
         const response = await autoSync({ autoSync: isOn });
+        console.log('开关新增设备自动同步结果：', response);
         if (response.error !== 0) {
+            // 缺少token凭证
+            if (response.error === 602) {
+                console.log(22222, etcStore.getAccessTokenVisible);
+                etcStore.setGetAccessTokenVisible(true);
+                return;
+            }
             if (response.error === 603) {
                 deviceStore.updateIsMqttConnected(false);
             } else {
@@ -121,10 +129,13 @@ const toggleAutoSync = async (isOn: boolean) => {
             }
             autoSyncSwitch.value = !isOn;
         }
+        syncType.value = '';
         autoSyncLoading.value = false;
     } catch (error) {
         console.log('开关新增设备自动同步出错：', error);
         autoSyncLoading.value = false;
+        autoSyncSwitch.value = !isOn;
+        syncType.value = '';
         message.error(t('ERROR[500]'));
     }
 };
@@ -170,7 +181,7 @@ const syncAllDevice = async () => {
                 deviceStore.updateIsMqttConnected(false);
             }
             syncType.value = '';
-            return message.error(t('ERROR[500]'));
+            return message.error(t('SYNC_FAIL'));
         }
         message.success(t('DEVICE_SYNC_SUCCESS', { number: response.data.successList.length }));
         // 拉取最新设备列表
@@ -181,7 +192,7 @@ const syncAllDevice = async () => {
         console.log('同步所有设备出错：', error);
         syncAllDeviceLoading.value = false;
         syncType.value = '';
-        message.error(t('ERROR[500]'));
+        message.error(t('SYNC_FAIL'));
     }
 };
 
@@ -202,6 +213,13 @@ const getTokenSuccessHandler = async () => {
         case 'unsync':
             await unsync(syncId.value);
             break;
+        // 开关自动同步，不需要重新执行，只需恢复相关初始状态
+        case 'auto':
+            autoSyncSwitch.value = !autoSyncSwitch.value;
+            autoSyncLoading.value = false;
+            syncType.value = '';
+            message.success(t('GET_TOKEN_SUCCESS'));
+            break;
         default:
             console.log('syncType:', syncType.value);
             break;
@@ -216,14 +234,18 @@ const goSettingsPage = () => {
 // 同步单个设备
 const sync = async (id: string) => {
     try {
+        // 未获取到token，需要取消上次同步设备的loading状态
+        if (syncId.value) {
+            setDeviceSyncLoading(syncId.value, false);
+        }
         const device = deviceStore.deviceList.find((device) => device.id === id)!;
         device.syncing = true;
-        syncId.value = id;
-        syncType.value = 'sync';
         const response = await syncSingle(id);
         if (response.error !== 0) {
             // 缺少token凭证
             if (response.error === 602) {
+                syncId.value = id;
+                syncType.value = 'sync';
                 etcStore.setGetAccessTokenVisible(true);
                 return;
             }
@@ -233,7 +255,7 @@ const sync = async (id: string) => {
             }
             syncId.value = '';
             syncType.value = '';
-            return message.error(t('ERROR[500]'));
+            return message.error(t('SYNC_FAIL'));
         }
         message.success(t('SYNC_SUCCESS'));
         // 拉取最新设备列表
@@ -245,21 +267,25 @@ const sync = async (id: string) => {
         console.log('同步单个设备出错：', error);
         syncId.value = '';
         syncType.value = '';
-        message.error(t('ERROR[500]'));
+        message.error(t('SYNC_FAIL'));
     }
 };
 
 // 取消同步
 const unsync = async (id: string) => {
     try {
+        // 未获取到token，需要取消上次同步设备的loading状态
+        if (syncId.value) {
+            setDeviceSyncLoading(syncId.value, false);
+        }
         const device = deviceStore.deviceList.find((device) => device.id === id)!;
         device.syncing = true;
-        syncId.value = id;
-        syncType.value = 'unsync';
         const response = await unsyncSingle(id);
         if (response.error !== 0) {
             // 缺少token凭证
             if (response.error === 602) {
+                syncId.value = id;
+                syncType.value = 'unsync';
                 etcStore.setGetAccessTokenVisible(true);
                 return;
             }
@@ -269,7 +295,7 @@ const unsync = async (id: string) => {
             }
             syncId.value = '';
             syncType.value = '';
-            return message.error(t('ERROR[500]'));
+            return message.error(t('SYNC_FAIL'));
         }
         message.success(t('CANCEL_SYNC_SUCCESS'));
         // 拉取最新设备列表
@@ -280,19 +306,14 @@ const unsync = async (id: string) => {
     } catch (error) {
         console.log('取消同步单个设备出错：', error);
         syncId.value = '';
-        message.error(t('ERROR[500]'));
+        message.error(t('SYNC_FAIL'));
     }
 };
 
 // 轮询 token 超过三分钟，取消上次操作的 loading状态
 const queryTokenTimeUpHandler = () => {
-    let device: IDeviceInfo | null = null;
     console.log('syncType:', syncType.value);
     console.log('syncId:', syncId.value);
-    if (syncId.value) {
-        device = deviceStore.deviceList.find((device) => device.id === syncId.value)!;
-        console.log('device:', device);
-    }
     switch (syncType.value) {
         // 同步所有设备
         case 'all':
@@ -300,21 +321,52 @@ const queryTokenTimeUpHandler = () => {
             break;
         // 同步单个设备
         case 'sync':
-            if (device) {
-                device.syncing = false;
-            }
+            setDeviceSyncLoading(syncId.value, false);
             break;
         // 取消同步单个设备
         case 'unsync':
-            if (device) {
-                device.syncing = false;
-            }
+            setDeviceSyncLoading(syncId.value, false);
+            break;
+        // 开关自动同步
+        case 'auto':
+            autoSyncSwitch.value = !autoSyncSwitch.value;
+            autoSyncLoading.value = false;
+            syncType.value = '';
             break;
         default:
             console.log('syncType:', syncType.value);
             break;
     }
+    message.error(t('GET_TOKEN_ERROR'));
     etcStore.setGetAccessTokenVisible(false);
+    console.log(33333, etcStore.getAccessTokenVisible);
+};
+
+// 外页弹窗点击取消回调
+const cancelGetTokenHandler = () => {
+    console.log('外页关闭获取token弹窗');
+    etcStore.setGetAccessTokenVisible(false);
+    // 取消loading状态与上一次执行操作数据
+    // 操作类型
+    syncType.value && (syncType.value = '');
+    // 同步/取消同步单个设备 loading
+    if (syncId.value) {
+        setDeviceSyncLoading(syncId.value, false);
+        syncId.value = '';
+    }
+    // 开关自动同步新增设备 loading
+    if (autoSyncLoading.value) {
+        autoSyncLoading.value = false;
+        autoSyncSwitch.value = !autoSyncSwitch.value;
+    }
+    // 同步所有设备 loading
+    syncAllDeviceLoading.value = false;
+};
+
+// 设置设备卡片同步loading状态
+const setDeviceSyncLoading = (id: string, show: boolean) => {
+    const device = deviceStore.deviceList.find((item) => item.id === id);
+    device && (device.syncing = show);
 };
 
 onMounted(async () => {
