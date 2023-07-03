@@ -45,41 +45,7 @@ const ERROR_LIST = [
     {
         errCode: 1802,
         errMsg: 'device is not exist in iHost',   // 该设备已经存在iHost中
-    },
-
-
-    {
-        errCode: 1101,
-        errMsg: 'IP can not connect',   // IP 地址无法连接
-    },
-    {
-        errCode: 1400,
-        errMsg: 'NSPro gateway need login'    // NSPro 网关需要登录
-    },
-    {
-        errCode: 1500,
-        errMsg: 'No src gateway info'    // 无同步来源网关的信息
-    },
-    {
-        errCode: 1501,
-        errMsg: 'Src gateway IP invalid'    // 同步来源网关的 IP 不可用
-    },
-    {
-        errCode: 1502,
-        errMsg: 'Src gateway token invalid'    // 同步来源网关的凭证不可用
-    },
-    {
-        errCode: 1503,
-        errMsg: 'Sync device not in src gateway'    // 同步设备不在同步来源网关中
-    },
-    {
-        errCode: 1800,
-        errMsg: 'Unsync device not found'    // 取消同步的设备不存在
-    },
-    {
-        errCode: 2000,
-        errMsg: 'Delete gateway not found'    // 删除的网关不存在
-    },
+    }
 ];
 
 export function toResponse(error: number, msg?: string, data?: any) {

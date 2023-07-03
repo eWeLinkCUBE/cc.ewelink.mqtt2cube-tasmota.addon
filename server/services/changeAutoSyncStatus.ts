@@ -14,6 +14,11 @@ import db from '../utils/db';
 export default async function changeIsAutoSyncStatus(req: Request, res: Response) {
     try {
         const { autoSync } = req.body;
+        // 校验是否已经获取过token
+        const iHostToken = await db.getDbValue('iHostToken'); 
+        if(!iHostToken) {
+            return res.json(602);
+        }
         await db.setDbValue('autoSync', autoSync);
         return res.json(toResponse(0));
     } catch (error: any) {
