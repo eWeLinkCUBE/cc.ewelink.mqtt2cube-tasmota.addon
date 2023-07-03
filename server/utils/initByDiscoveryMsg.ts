@@ -13,6 +13,7 @@ import { getMQTTClient } from '../ts/class/mqtt';
 import db from './db';
 import { generateIHostDevice } from '../services/syncOneDevice';
 import SSE from '../ts/class/sse';
+import { getSwitchChannel } from './device';
 
 
 /** relay与类型的映射 */
@@ -80,6 +81,23 @@ async function compareSetting(newSetting: TDeviceSetting, oldSetting: TDeviceSet
         }
 
         // 从一种类型变为另一种类型的处理，目前只支持switch，所以暂时不需要处理
+        return newSetting;
+    }
+
+    // 6. 类型没有变化则看有无需要做对应处理
+    if (newSetting.display_category === EDeviceType.SWITCH) {
+        const newChannelLength = getSwitchChannel(newSetting);
+        const oldChannelLength = getSwitchChannel(oldSetting);
+        // 通道数没有产生变化，直接返回
+        if (newChannelLength === oldChannelLength) return newSetting;
+        // 通道数产生变化了，应用新的设备数据
+        logger.info(`[compareSetting] device ${newSetting.name}'channel has change from ${oldChannelLength} to ${newChannelLength}`);
+        const res = await deleteDevice(curDevice.serial_number);
+        logger.info(`[compareSetting] delete device id ${curDevice.serial_number} result => ${JSON.stringify(res)}`);
+        const params = generateIHostDevice([newSetting]);
+        const syncRes = await syncDeviceToIHost(params);
+        logger.info(`[compareSetting] sync device id ${curDevice.serial_number} result => ${JSON.stringify(res)}`);
+        return newSetting;
     }
 
     return newSetting;
@@ -87,73 +105,78 @@ async function compareSetting(newSetting: TDeviceSetting, oldSetting: TDeviceSet
 
 
 export async function initByDiscoveryMsg(eventData: IMqttReceiveEvent<IDiscoveryMsg>) {
-    const { mac } = eventData.data;
+    try {
+        const { mac } = eventData.data;
 
-    /** 设备配置信息列表 */
-    const deviceSettingList = getDeviceSettingList();
+        /** 设备配置信息列表 */
+        const deviceSettingList = getDeviceSettingList();
 
-    /** 自动同步开关 */
-    const autoSync = await db.getDbValue('autoSync');
+        /** 自动同步开关 */
+        const autoSync = await db.getDbValue('autoSync');
 
-    // 1.判断这个mac地址在缓存中是否存在
-    const deviceSettingIdx = _.findIndex(deviceSettingList, { mac });
+        // 1.判断这个mac地址在缓存中是否存在
+        const deviceSettingIdx = _.findIndex(deviceSettingList, { mac });
 
-    // 2.根据生成对应的数据结构
-    const curDeviceSetting = analyzeDiscovery(eventData.data);
+        // 2.根据生成对应的数据结构
+        const curDeviceSetting = analyzeDiscovery(eventData.data);
 
-    // 3. 缓存如果不存在，直接更新到缓存中去
-    if (deviceSettingIdx === -1) {
-        deviceSettingList.push(curDeviceSetting);
-        updateDeviceSettingList(deviceSettingList);
-        mqttUtils.resubscribeMQTTTopic(curDeviceSetting);
-        const { name, display_category, mac, online } = curDeviceSetting;
-        let synced = false;
+        // 3. 缓存如果不存在，直接更新到缓存中去
+        if (deviceSettingIdx === -1) {
+            deviceSettingList.push(curDeviceSetting);
+            updateDeviceSettingList(deviceSettingList);
+            mqttUtils.resubscribeMQTTTopic(curDeviceSetting);
+            const { name, display_category, mac, online } = curDeviceSetting;
+            logger.info(`[initByDiscoveryMsg] device ${curDeviceSetting.name} is not exist in cache`)
+            let synced = false;
 
-        // 自动同步逻辑
-        if (autoSync && curDeviceSetting.display_category !== EDeviceType.UNKNOWN) {
-            logger.info(`[initByDiscoveryMsg] autoSync is true`);
-            const params = generateIHostDevice([curDeviceSetting]);
-            const syncRes = await syncDeviceToIHost(params);
-            if (_.isEmpty(syncRes.payload)) {
-                synced = true;
+            // 自动同步逻辑
+            if (autoSync && curDeviceSetting.display_category !== EDeviceType.UNKNOWN) {
+                logger.info(`[initByDiscoveryMsg] autoSync is true`);
+                const params = generateIHostDevice([curDeviceSetting]);
+                const syncRes = await syncDeviceToIHost(params);
+                if (_.isEmpty(syncRes.payload)) {
+                    synced = true;
+                }
+                logger.info(`[initByDiscoveryMsg] auto sync device ${JSON.stringify(syncRes)}`)
             }
-            logger.info(`[initByDiscoveryMsg] auto sync device ${JSON.stringify(syncRes)}`)
+
+            // 发送SSE给前端
+            SSE.send({
+                name: "new_device_report",
+                data: {
+                    name,
+                    category: display_category,
+                    id: mac,
+                    online,
+                    synced
+                }
+            });
+
+            return;
         }
 
-        // 发送SSE给前端
-        SSE.send({
-            name: "new_device_report",
-            data: {
-                name,
-                category: display_category,
-                id: mac,
-                online,
-                synced
-            }
-        });
+        // 4. 缓存如果存在，对比缓存中哪些东西产生了变化
+        const oldDeviceSetting = deviceSettingList[deviceSettingIdx];
+        const newDeviceSetting = await compareSetting(curDeviceSetting, oldDeviceSetting);
 
-        return;
-    }
-
-    // 4. 缓存如果存在，对比缓存中哪些东西产生了变化
-    const oldDeviceSetting = deviceSettingList[deviceSettingIdx];
-    const newDeviceSetting = await compareSetting(curDeviceSetting, oldDeviceSetting);
-
-    // 5. 将最终生成的新setting更新回去
-    mqttUtils.resubscribeMQTTTopic(curDeviceSetting, oldDeviceSetting)
-    deviceSettingList[deviceSettingIdx] = newDeviceSetting;
-    updateDeviceSettingList(deviceSettingList);
+        // 5. 将最终生成的新setting更新回去
+        mqttUtils.resubscribeMQTTTopic(curDeviceSetting, oldDeviceSetting)
+        deviceSettingList[deviceSettingIdx] = newDeviceSetting;
+        updateDeviceSettingList(deviceSettingList);
 
 
-    // 6. 推送topic查询设备状态
-    const mqttClient = await getMQTTClient();
-    if (!mqttClient) {
-        logger.error(`[initByDiscoveryMsg] mqtt client doesn't exist`);
-        return;
-    }
+        // 6. 推送topic查询设备状态
+        const mqttClient = await getMQTTClient();
+        if (!mqttClient) {
+            logger.error(`[initByDiscoveryMsg] mqtt client doesn't exist`);
+            return;
+        }
 
-    if (newDeviceSetting.display_category === EDeviceType.SWITCH) {
-        const publishRes = await mqttClient.publish(`${newDeviceSetting.mqttTopics.poll_topic}`, "");
-        logger.info(`[initByDiscoveryMsg] publish topic res => ${publishRes}`);
+        if (newDeviceSetting.display_category === EDeviceType.SWITCH) {
+            const publishRes = await mqttClient.publish(`${newDeviceSetting.mqttTopics.poll_topic}`, "");
+            logger.info(`[initByDiscoveryMsg] publish topic res => ${publishRes}`);
+        }
+    } catch (err) {
+        logger.error(`[initByDiscoveryMsg] init discovery message error ${err}`);
     }
 }

@@ -7,6 +7,7 @@ import { getDeviceSettingList } from '../utils/tmp';
 import EDeviceType from '../ts/enum/EDeviceType';
 import { getMQTTClient } from '../ts/class/mqtt';
 import logger from '../log';
+import { getSwitchChannel } from '../utils/device';
 
 
 /**
@@ -35,8 +36,7 @@ export default async function openControlDevice(req: Request, res: Response) {
         const deviceSettingList = getDeviceSettingList();
         for (const deviceSetting of deviceSettingList) {
             if (deviceSetting.mac === mac && deviceSetting.display_category === EDeviceType.SWITCH) {
-                const toggleState = _.get(deviceSetting.state, 'toggle');
-                const channelLength = toggleState ? Object.keys(toggleState).length : 1;
+                const channelLength = getSwitchChannel(deviceSetting);
                 logger.info(`[openControlDevice] channelLength => ${channelLength}`);
                 const { mqttTopics } = deviceSetting;
                 if (channelLength === 1) {

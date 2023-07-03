@@ -71,31 +71,34 @@ async function handleMQTTReceiveMsg(eventData: IMqttReceiveEvent<any>) {
  * @param {TDeviceSetting} deviceSetting
  * @returns {*} 
  */
-async function handleSwitchMQTTMsg(eventData: IMqttReceiveEvent<any>, deviceSetting: TDeviceSetting) {
+async function handleSwitchMQTTMsg(eventData: IMqttReceiveEvent<any>, deviceSetting: TDeviceSetting): Promise<void> {
     logger.info(`[handleSwitchMQTTMsg] handling switch ${JSON.stringify(eventData)}`);
     if (deviceSetting.display_category !== EDeviceType.SWITCH) return;
     const { topic } = eventData;
     const { mqttTopics: { state_topic, result_topic, availability_topic, power_topics }, so } = deviceSetting;
 
+    if (power_topics.includes(topic) && so["4"] === 1) {
+        logger.info(`[handleSwitchMQTTMsg] handle switch power`)
+        await handleSwitchPower(eventData, deviceSetting, true);
+        return;
+    }
+
     if (topic.toLowerCase() === state_topic.toLowerCase() || topic.toLowerCase() === result_topic.toLowerCase()) {
         logger.info(`[handleSwitchMQTTMsg] here is state topic ${eventData.topic}`);
 
         // 处理POWER事件
-        if (_.get(eventData.data.payload, ['POWER'])) {
+        if (_.get(eventData.data, ['POWER'])) {
             logger.info(`[handleSwitchMQTTMsg] handle switch power`)
             await handleSwitchPower(eventData, deviceSetting);
         }
-    }
 
-    if (power_topics.includes(topic) && so["4"] === 1) {
-        logger.info(`[handleSwitchMQTTMsg] handle switch power`)
-        await handleSwitchPower(eventData, deviceSetting, true);
+        return;
     }
-
 
     // 处理在线离线
     if (topic.toLowerCase() === availability_topic.toLowerCase()) {
         await handleDeviceOnlineOffline(eventData, deviceSetting);
+        return;
     }
 }
 

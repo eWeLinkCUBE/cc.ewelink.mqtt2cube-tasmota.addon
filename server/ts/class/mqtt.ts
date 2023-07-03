@@ -72,8 +72,8 @@ class MQTT {
             this.client.setMaxListeners(0);
 
             const onConnect = this.#onConnect.bind(this);
-            this.client.on('connect', async () => {
-                logger.error('[mqtt] connected to MQTT server!!!!');
+            this.client.on('connect', async (packet) => {
+                logger.error('[mqtt] connected to MQTT server!!!!', JSON.stringify(packet));
                 // logger.error('[mqtt] mqtt is reconnecting');
                 await onConnect();
                 hasInit = true;
@@ -198,7 +198,7 @@ class MQTT {
             return;
         };
         const truePayload = payload.toString();
-        // logger.info(`[mqtt] onMessage params`, topic, truePayload, payload.length);
+
         const eventData: IMqttReceiveEvent<{}> = {
             topic,
             data: {},
@@ -346,5 +346,3 @@ export async function getMQTTClient(): Promise<MQTT | null> {
 
     return null;
 }
-
-// export default mqttClient;

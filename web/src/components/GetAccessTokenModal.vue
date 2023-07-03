@@ -37,7 +37,6 @@ import { useI18n } from 'vue-i18n';
 import { useEtcStore } from '@/stores/etc';
 import { message } from 'ant-design-vue';
 import { computed, ref, watch } from 'vue';
-import type { IntervalHistogram } from 'perf_hooks';
 
 // 国际化
 const { t } = useI18n();
@@ -53,19 +52,19 @@ const props = defineProps({
 const emits = defineEmits(['getTokenSuccess', 'hideModal', 'queryTimeUp']);
 const getAccessTokenTimer = ref<any>();
 const getAccessTokenNumber = ref<number>(0);
-// const isIframe = computed(() => {
-//     if (self.frameElement && self.frameElement.tagName == 'IFRAME') {
-//         return true;
-//     }
-//     if (window.frames.length != parent.frames.length) {
-//         return true;
-//     }
-//     if (self != top) {
-//         return true;
-//     }
-//     return false;
-// });
-const isIframe = ref(true);
+const isIframe = computed(() => {
+    if (self.frameElement && self.frameElement.tagName == 'IFRAME') {
+        return true;
+    }
+    if (window.frames.length != parent.frames.length) {
+        return true;
+    }
+    if (self != top) {
+        return true;
+    }
+    return false;
+});
+// const isIframe = ref(true);
 const bodyHeight = computed(() => {
     if (etcStore.language === 'en-us') {
         return '572px';
@@ -75,7 +74,7 @@ const bodyHeight = computed(() => {
 });
 watch(
     () => props.getAccessTokenVisible,
-    (newValue, oldValue) => {
+    (newValue) => {
         if (newValue) {
             console.log(11111);
             getIhostAccessToken();
@@ -88,7 +87,7 @@ watch(
 );
 watch(
     () => getAccessTokenNumber.value,
-    (newValue, oldValue) => {
+    (newValue) => {
         if (newValue >= 18) {
             console.log('轮询超过三分钟');
             clearInterval(getAccessTokenTimer.value);

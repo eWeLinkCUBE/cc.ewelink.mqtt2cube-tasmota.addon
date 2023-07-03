@@ -4,7 +4,7 @@ import { v4 as uuid } from 'uuid';
 import { getIHostSyncDeviceList, syncDeviceOnlineToIHost } from "../cube-api/api";
 import IHostDevice from "../ts/interface/IHostDevice";
 import { TDeviceSetting, getDeviceSettingList } from "./tmp";
-import { TAG_DATA_NAME } from '../const';
+import EDeviceType from '../ts/enum/EDeviceType';
 
 /**
  * @description 检查iHost设备列表中是否存在指定tasmota设备
@@ -69,4 +69,17 @@ export async function allTasmotaDeviceOnOrOffline(type: 'online' | 'offline') {
         const syncOnlineRes = await syncDeviceOnlineToIHost(params)
         logger.info(`[allTasmotaDeviceOffline] device ${deviceSetting.mac} offline result ${JSON.stringify(syncOnlineRes)}`)
     }
+}
+
+
+/**
+ * @description 从设备配置中获取开关的通道数
+ * @export
+ * @param {TDeviceSetting} deviceSetting
+ * @returns {*}  {number}
+ */
+export function getSwitchChannel(deviceSetting: TDeviceSetting): number {
+    if (deviceSetting.display_category !== EDeviceType.SWITCH) return 0;
+    const toggleState = _.get(deviceSetting.state, 'toggle');
+    return toggleState ? Object.keys(toggleState).length : 1;
 }
