@@ -10,6 +10,7 @@ const en = {
     CANCELING_SYNC: 'Unsync',
     SYNC_SUCCESS: 'Success',
     CANCEL_SYNC_SUCCESS: 'Success',
+    SYNC_FAIL: 'Sync device failed',
     NO_DATA: 'No Data',
     SYNCING_ALL_DEVICE_TIP: 'Syncing all devices, please wait',
     DEVICE_LIST_DISCONNECT_TIP: 'Unable to connect to the MQTT broker. Please click Settings to reconfigure the MQTT broker.',
@@ -56,6 +57,7 @@ const en = {
     CANCEL: 'Cancel',
     SAVE: 'Save',
     GET_TOKEN_ERROR: 'Failed to get iHost access token, please try again.',
+    GET_TOKEN_SUCCESS: 'The token has been obtained, click the button again to synchronize the device',
     DEVICE_SYNC_SUCCESS: '{number} devices synced successfully',
 };
 

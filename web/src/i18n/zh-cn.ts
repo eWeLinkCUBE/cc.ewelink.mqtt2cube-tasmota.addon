@@ -10,6 +10,7 @@ const cn = {
     CANCELING_SYNC: '取消同步',
     SYNC_SUCCESS: '同步成功',
     CANCEL_SYNC_SUCCESS: '取消同步成功',
+    SYNC_FAIL: '同步失败',
     NO_DATA: '暂无数据',
     SYNCING_ALL_DEVICE_TIP: '正在同步所有设备，请稍等',
     DEVICE_LIST_DISCONNECT_TIP: 'MQTT broker 无法连接，请点击设置重新配置 MQTT broker',
@@ -56,6 +57,7 @@ const cn = {
     CANCEL: '取消',
     SAVE: '保存',
     GET_TOKEN_ERROR: '获取凭证失败，请重试',
+    GET_TOKEN_SUCCESS: '凭证获取成功，再次点击按钮同步设备',
     DEVICE_SYNC_SUCCESS: '{number} 个设备同步成功',
 };
 
