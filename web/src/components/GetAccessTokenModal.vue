@@ -53,18 +53,19 @@ const props = defineProps({
 const emits = defineEmits(['getTokenSuccess', 'hideModal', 'queryTimeUp']);
 const getAccessTokenTimer = ref<any>();
 const getAccessTokenNumber = ref<number>(0);
-const isIframe = computed(() => {
-    if (self.frameElement && self.frameElement.tagName == 'IFRAME') {
-        return true;
-    }
-    if (window.frames.length != parent.frames.length) {
-        return true;
-    }
-    if (self != top) {
-        return true;
-    }
-    return false;
-});
+// const isIframe = computed(() => {
+//     if (self.frameElement && self.frameElement.tagName == 'IFRAME') {
+//         return true;
+//     }
+//     if (window.frames.length != parent.frames.length) {
+//         return true;
+//     }
+//     if (self != top) {
+//         return true;
+//     }
+//     return false;
+// });
+const isIframe = ref(true);
 const bodyHeight = computed(() => {
     if (etcStore.language === 'en-us') {
         return '572px';
@@ -79,7 +80,9 @@ watch(
             console.log(11111);
             getIhostAccessToken();
         } else {
-            clearInterval(getAccessTokenTimer.value);
+            if (getAccessTokenTimer.value > 0) {
+                clearInterval(getAccessTokenTimer.value);
+            }
         }
     }
 );
@@ -90,7 +93,9 @@ watch(
             console.log('轮询超过三分钟');
             clearInterval(getAccessTokenTimer.value);
             getAccessTokenNumber.value = 0;
-            emits('queryTimeUp');
+            if (isIframe.value) {
+                emits('queryTimeUp');
+            }
         }
     }
 );

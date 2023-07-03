@@ -28,8 +28,8 @@ export const useSseStore = defineStore('sse', {
             });
 
             /** 新增设备推送 */
-            source.addEventListener('obtain_token_success_report', async (event: any) => {
-                console.log('obtain_token_success------------->', event.data);
+            source.addEventListener('new_device_report', async (event: any) => {
+                console.log('new_device_report------------->', event.data);
                 await useDeviceStore().getDeviceList();
             });
 
