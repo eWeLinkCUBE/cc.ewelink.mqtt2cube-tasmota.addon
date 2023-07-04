@@ -85,9 +85,11 @@ async function handleSwitchMQTTMsg(eventData: IMqttReceiveEvent<any>, deviceSett
 
     if (topic.toLowerCase() === state_topic.toLowerCase() || topic.toLowerCase() === result_topic.toLowerCase()) {
         logger.info(`[handleSwitchMQTTMsg] here is state topic ${eventData.topic}`);
+        if(typeof eventData.data === 'string') return;
 
+        const isPowerTopic = Object.keys(eventData.data).some(key => key.toLowerCase().includes('power'));
         // 处理POWER事件
-        if (_.get(eventData.data, ['POWER'])) {
+        if (isPowerTopic) {
             logger.info(`[handleSwitchMQTTMsg] handle switch power`)
             await handleSwitchPower(eventData, deviceSetting);
         }

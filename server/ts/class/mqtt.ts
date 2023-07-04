@@ -217,7 +217,7 @@ class MQTT {
      * @returns 
      */
     async onMessage(topic: string, payload: Buffer, packet: IPublishPacket) {
-        logger.error('[mqtt] ===================mqtt receive message===================, ', topic, payload, payload.length, JSON.stringify(packet));
+        logger.error(`[mqtt] ===================mqtt receive topic ${topic}===================, `, topic, payload, payload.length, JSON.stringify(packet));
 
         if (this.publishedTopics.has(topic)) {
             logger.error("[mqtt] receive same topic as I send it => ", topic, this.publishedTopics);
