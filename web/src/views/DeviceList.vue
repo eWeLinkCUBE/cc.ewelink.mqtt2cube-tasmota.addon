@@ -8,7 +8,7 @@
             <span class="title">{{ t('DEVICE_LIST_TITLE') }}</span>
             <div class="right">
                 <span class="auto-sync-tip">{{ t('AUTO_SYNC_TIP') }}</span>
-                <a-switch v-model:checked="autoSyncSwitch" :loading="autoSyncLoading" @click="toggleAutoSync"></a-switch>
+                <a-switch v-model:checked="autoSyncSwitch" :loading="autoSyncLoading" @click="toggleAutoSync" :disabled="!deviceStore.isMqttConnected"></a-switch>
                 <img :class="!deviceStore.isMqttConnected ? 'icon sync-all-icon sync-all-icon-disabled' : 'icon sync-all-icon'" :src="syncAllIcon" alt="" @click="syncAllDevice" />
                 <div class="wrap" @click="goSettingsPage">
                     <img class="icon settings-icon" :src="settingsIcon" alt="" />
