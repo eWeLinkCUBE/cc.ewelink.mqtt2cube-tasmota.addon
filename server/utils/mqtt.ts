@@ -78,7 +78,7 @@ async function handleSwitchMQTTMsg(eventData: IMqttReceiveEvent<any>, deviceSett
     const { mqttTopics: { state_topic, result_topic, availability_topic, power_topics }, so } = deviceSetting;
 
     if (power_topics.includes(topic) && so["4"] === 1) {
-        logger.info(`[handleSwitchMQTTMsg] handle switch power`)
+        logger.info(`[handleSwitchMQTTMsg] handle setOption4's switch power`)
         await handleSwitchPower(eventData, deviceSetting);
         return;
     }
@@ -225,37 +225,37 @@ async function handleSwitchPower(eventData: IMqttReceiveEvent<any>, deviceSettin
 
     logger.info(`[handleSwitchPower] receiving power string: ${powerString} and power state: ${powerState}`);
 
-    
+
 
     // 根据单通道与多通道生成更新所需的state
     if (channelLength === 1) {
         const power = powerState === state_power_on ? "on" : "off";
         deviceSetting.state.power.powerState = power;
-        _.assign(state, {
+        state = {
             power: {
                 powerState: power
             }
-        })
-        return;
-    }
-
-
-    for (let i = 1; i <= channelLength; i++) {
-        const key = `POWER${i}` as keyof IStateTopic;
-        if (powerString !== key) continue;
+        };
+    } else {
+        /** 检测值是否有效 */
         const validState = [state_power_on, state_power_off].includes(powerState);
-        if (!validState) continue;
+        if (!validState) return;
+        /** 开关状态 */
         const power = powerState === state_power_on ? 'on' : 'off'
-        deviceSetting.state.toggle![i].toggleState = power;
-        const toggle: IState = _.get(state, ['toggle'], {})
-        _.assign(toggle, {
-            [i]: {
-                toggleState: power
+        /** 通道数 */
+        const channel = powerString.split('POWER')[1];
+        if (!channel) return;
+        deviceSetting.state.toggle![channel].toggleState = power;
+        state = {
+            toggle: {
+                [channel]: {
+                    toggleState: power
+                }
             }
-        })
-
-        state = { toggle }
+        }
     }
+
+
 
 
     logger.info(`[handleSwitchPower] ${JSON.stringify(state, null, 2)}`);
