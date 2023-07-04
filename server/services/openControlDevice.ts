@@ -35,10 +35,12 @@ export default async function openControlDevice(req: Request, res: Response) {
 
         const deviceSettingList = getDeviceSettingList();
         for (const deviceSetting of deviceSettingList) {
+            // 对开关设备进行处理
             if (deviceSetting.mac === mac && deviceSetting.display_category === EDeviceType.SWITCH) {
                 const channelLength = getSwitchChannel(deviceSetting);
                 logger.info(`[openControlDevice] channelLength => ${channelLength}`);
                 const { mqttTopics } = deviceSetting;
+                // 单通道设备
                 if (channelLength === 1) {
                     const powerState = iHostState.power.powerState;
                     const publishRes = await mqttClient.publish(`${mqttTopics.command_topic}POWER`, powerState);
@@ -49,6 +51,7 @@ export default async function openControlDevice(req: Request, res: Response) {
                     continue;
                 }
 
+                // 多通道设备
                 for (let i = 1; i <= channelLength; i++) {
                     const toggleObj = _.get(iHostState, ['toggle', `${i}`, 'toggleState']);
                     const powerObj = _.get(iHostState, ['power', 'powerState']);
@@ -100,14 +103,4 @@ function createFailRes(message_id: string) {
             payload: {},
         },
     };
-}
-
-
-/** 等待时间 单位 ms */
-function sleepMs(ms: number) {
-    return new Promise((resolve, reject) => {
-        setTimeout(() => {
-            resolve('');
-        }, ms);
-    });
 }

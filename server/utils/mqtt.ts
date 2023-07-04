@@ -10,7 +10,7 @@ import { initByDiscoveryMsg } from "./initByDiscoveryMsg";
 import { TDeviceSetting, getDeviceSettingList, updateDeviceSettingList } from "./tmp";
 import { getIHostSyncDeviceList, syncDeviceOnlineToIHost, syncDeviceStateToIHost } from '../cube-api/api';
 import { checkTasmotaDeviceInIHost } from './device';
-import { ISwitch } from '../ts/interface/ISwitch';
+import { IState, ISwitch } from '../ts/interface/ISwitch';
 
 const DEVICE_TYPE_TO_FUNC_MAPPING = {
     [EDeviceType.SWITCH]: handleSwitchMQTTMsg,
@@ -214,19 +214,28 @@ async function handleSwitchPower(eventData: IMqttReceiveEvent<any>, deviceSettin
         return;
     }
 
-    
+
     // 1. 生成更新内容
     const payload = eventData.data;
     /** power 字符串，单通道为POWER 多通道为POWER<n> */
     const powerString = Object.keys(payload).find(keys => keys.includes('POWER')) as string;
     /** power 状态 */
     const powerState = eventData.data[powerString];
+    let state: {} | IState = {};
 
     logger.info(`[handleSwitchPower] receiving power string: ${powerString} and power state: ${powerState}`);
 
+    
+
+    // 根据单通道与多通道生成更新所需的state
     if (channelLength === 1) {
         const power = powerState === state_power_on ? "on" : "off";
         deviceSetting.state.power.powerState = power;
+        _.assign(state, {
+            power: {
+                powerState: power
+            }
+        })
         return;
     }
 
@@ -236,8 +245,20 @@ async function handleSwitchPower(eventData: IMqttReceiveEvent<any>, deviceSettin
         if (powerString !== key) continue;
         const validState = [state_power_on, state_power_off].includes(powerState);
         if (!validState) continue;
-        deviceSetting.state.toggle![i].toggleState = powerState === state_power_on ? 'on' : 'off';
+        const power = powerState === state_power_on ? 'on' : 'off'
+        deviceSetting.state.toggle![i].toggleState = power;
+        const toggle: IState = _.get(state, ['toggle'], {})
+        _.assign(toggle, {
+            [i]: {
+                toggleState: power
+            }
+        })
+
+        state = { toggle }
     }
+
+
+    logger.info(`[handleSwitchPower] ${JSON.stringify(state, null, 2)}`);
 
     // 2. 更新缓存数据
     const deviceSettingList = getDeviceSettingList();
@@ -268,7 +289,7 @@ async function handleSwitchPower(eventData: IMqttReceiveEvent<any>, deviceSettin
                     third_serial_number: deviceSetting.mac,
                 },
                 payload: {
-                    state: deviceSetting.state
+                    state
                 },
             },
         }
