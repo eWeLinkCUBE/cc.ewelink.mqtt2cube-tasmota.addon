@@ -9,7 +9,7 @@
             <div class="right">
                 <span class="auto-sync-tip">{{ t('AUTO_SYNC_TIP') }}</span>
                 <a-switch v-model:checked="autoSyncSwitch" :loading="autoSyncLoading" @click="toggleAutoSync" :disabled="!deviceStore.isMqttConnected"></a-switch>
-                <img :class="!deviceStore.isMqttConnected ? 'icon sync-all-icon sync-all-icon-disabled' : 'icon sync-all-icon'" :src="syncAllIcon" alt="" @click="syncAllDevice" />
+                <!-- <img :class="!deviceStore.isMqttConnected ? 'icon sync-all-icon sync-all-icon-disabled' : 'icon sync-all-icon'" :src="syncAllIcon" alt="" @click="syncAllDevice" /> -->
                 <div class="wrap" @click="goSettingsPage">
                     <img class="icon settings-icon" :src="settingsIcon" alt="" />
                     <img :src="warningIcon" alt="" v-if="!deviceStore.isMqttConnected" class="disconnect-warning-icon" />
@@ -385,6 +385,10 @@ onMounted(async () => {
         etcStore.languageChange('en-us');
     }
     console.log(etcStore.language, '当前语言');
+    // 初始化弹窗组件显示状态
+    if (etcStore.getAccessTokenVisible) {
+        etcStore.setGetAccessTokenVisible(false);
+    }
     // 获取设备列表
     await deviceStore.getDeviceList();
     // 获取设备自动同步开关状态
@@ -442,6 +446,7 @@ onMounted(async () => {
                 // }
             }
             .wrap {
+                margin-left: 28px;
                 position: relative;
                 // &:hover {
                 //     margin-top: -4px;

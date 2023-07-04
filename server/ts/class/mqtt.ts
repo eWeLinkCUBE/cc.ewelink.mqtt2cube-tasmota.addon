@@ -98,8 +98,19 @@ class MQTT {
             })
 
 
-            this.client.on('close', () => {
-                logger.error('[mqtt] mqtt is close');
+            this.client.on('close', async () => {
+                logger.error(`[mqtt] mqtt connect close`);
+                const mqttConnected = getMQTTConnected();
+                if (mqttConnected) {
+                    await this.#connectedMqtt();
+                }
+
+                if (hasInit) {
+                    reject(0);
+                    return;
+                }
+
+                resolve(0);
             })
 
             this.client.on('end', () => {
@@ -111,26 +122,19 @@ class MQTT {
                 logger.error('[mqtt] mqtt is disconnect', JSON.stringify(packet));
             })
 
-            this.client.on('packetreceive', (packet) => {
-                logger.error('[mqtt] mqtt is packetreceive', JSON.stringify(packet));
-            })
+            // this.client.on('packetreceive', (packet) => {
+            //     logger.error('[mqtt] mqtt is packetreceive', JSON.stringify(packet));
+            // })
 
-            this.client.on('packetsend', (packet) => {
-                logger.error('[mqtt] mqtt is packetreceive', JSON.stringify(packet));
-            })
-
-
+            // this.client.on('packetsend', (packet) => {
+            //     logger.error('[mqtt] mqtt is packetreceive', JSON.stringify(packet));
+            // })
 
             this.client.on('error', async (err) => {
                 logger.error(`[mqtt] mqtt connect error => ${err.message} ${hasInit}`);
                 const mqttConnected = getMQTTConnected();
                 if (mqttConnected) {
-                    SSE.send({
-                        name: "mqtt_disconnect_report",
-                        data: {}
-                    })
-                    updateMQTTConnected(false);
-                    await allTasmotaDeviceOnOrOffline('offline');
+                    await this.#connectedMqtt();
                 }
 
                 if (hasInit) {
@@ -140,8 +144,21 @@ class MQTT {
 
                 resolve(0);
             });
+
+
             this.client.on('message', this.onMessage.bind(this));
         });
+    }
+
+
+
+    async #connectedMqtt() {
+        SSE.send({
+            name: "mqtt_disconnect_report",
+            data: {}
+        })
+        updateMQTTConnected(false);
+        await allTasmotaDeviceOnOrOffline('offline');
     }
 
 
@@ -152,6 +169,9 @@ class MQTT {
      */
     disconnect() {
         logger.error(`[mqtt] mqtt disconnect is called!!!!!`)
+        if (this.connectionTimer) {
+            clearTimeout(this.connectionTimer);
+        }
         return this.client!.end(true);
     }
 
@@ -191,7 +211,8 @@ class MQTT {
      * @returns 
      */
     async onMessage(topic: string, payload: Buffer, packet: IPublishPacket) {
-        logger.info(`[mqtt] onMessage init params`, topic, payload, payload.length);
+        
+        logger.info(`[mqtt] onMessage init params`, topic, payload, payload.length, JSON.stringify(packet));
 
         if (this.publishedTopics.has(topic)) {
             logger.error("[mqtt] receive same topic as I send it => ", topic, this.publishedTopics);

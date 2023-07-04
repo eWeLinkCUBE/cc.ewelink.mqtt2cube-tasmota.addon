@@ -29,7 +29,8 @@ const router = express.Router();
 router.get(EApiPath.GET_MQTT_BROKER, checkSchema({}), getMQTTBroker);
 router.post(EApiPath.SET_MQTT_BROKER, checkSchema({}), setMQTTBroker);
 router.get(EApiPath.GET_DEVICE_LIST, checkSchema({}), validate, getDeviceList);
-router.put(EApiPath.SYNC_ALL_DEVICES, checkSchema({}), syncAllDevices);
+// 暂不支持
+// router.put(EApiPath.SYNC_ALL_DEVICES, checkSchema({}), syncAllDevices);
 router.put(EApiPath.SYNC_ONE_DEVICE, checkSchema({}), syncOneDevice);
 router.put(EApiPath.UN_SYNC_ONE_DEVICE, checkSchema({}), unSyncOneDevice);
 router.get(EApiPath.GET_AUTO_SYNC_STATUS, checkSchema({}), getAutoSyncStatus);
