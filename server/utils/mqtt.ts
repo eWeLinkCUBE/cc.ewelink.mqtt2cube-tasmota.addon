@@ -79,7 +79,7 @@ async function handleSwitchMQTTMsg(eventData: IMqttReceiveEvent<any>, deviceSett
 
     if (power_topics.includes(topic) && so["4"] === 1) {
         logger.info(`[handleSwitchMQTTMsg] handle switch power`)
-        await handleSwitchPower(eventData, deviceSetting, true);
+        await handleSwitchPower(eventData, deviceSetting);
         return;
     }
 
@@ -201,27 +201,28 @@ async function unsubscribeAllTopic(deviceSetting: TDeviceSetting): Promise<void>
 }
 
 
-async function handleSwitchPower(eventData: IMqttReceiveEvent<any>, deviceSetting: ISwitch, isString = false) {
+async function handleSwitchPower(eventData: IMqttReceiveEvent<any>, deviceSetting: ISwitch) {
     const { mqttTopics: { state_power_on, state_power_off }, capabilities } = deviceSetting;
     const toggleCount = capabilities.filter(capability => capability.capability === 'toggle').length;
     const channelLength = toggleCount === 0 ? 1 : toggleCount;
     const { topic } = eventData;
 
-    /** power 字符串，单通道为POWER 多通道为POWER<n> */
-    let powerString = "";
-    /** power 状态 */
-    let powerState = state_power_off;
-
-    // 1. 生成更新内容
-    if (isString) {
-        const topicSplit = topic.split('/');
-        powerString = topicSplit[topicSplit.length - 1];
-        powerState = eventData.data;
-    } else {
-        const payload = eventData.data
-        powerString = Object.keys(payload).find(keys => keys.includes('POWER')) as string;
-        powerState = eventData.data[powerString];
+    // POWER topic会发送两个回复，一个为JSON格式，一个为字符串格式，不需要重复处理
+    // 另外考虑到setOption90会禁止MQTT消息以非JSON的格式发送，所以此处直接跳过对字符串回复的处理，仅处理JSON格式
+    if (typeof eventData.data === 'string') {
+        logger.info(`[handleSwitchPower] topic ${topic} receiving repeat power message ${JSON.stringify(eventData)}, ignore it`);
+        return;
     }
+
+    
+    // 1. 生成更新内容
+    const payload = eventData.data;
+    /** power 字符串，单通道为POWER 多通道为POWER<n> */
+    const powerString = Object.keys(payload).find(keys => keys.includes('POWER')) as string;
+    /** power 状态 */
+    const powerState = eventData.data[powerString];
+
+    logger.info(`[handleSwitchPower] receiving power string: ${powerString} and power state: ${powerState}`);
 
     if (channelLength === 1) {
         const power = powerState === state_power_on ? "on" : "off";
@@ -229,7 +230,6 @@ async function handleSwitchPower(eventData: IMqttReceiveEvent<any>, deviceSettin
         return;
     }
 
-    logger.info(`[handleSwitchPower] receiving power string: ${powerString} and power state: ${powerState}`);
 
     for (let i = 1; i <= channelLength; i++) {
         const key = `POWER${i}` as keyof IStateTopic;
@@ -243,13 +243,13 @@ async function handleSwitchPower(eventData: IMqttReceiveEvent<any>, deviceSettin
     const deviceSettingList = getDeviceSettingList();
     const curIdx = deviceSettingList.findIndex(curDeviceSetting => curDeviceSetting.mac === deviceSetting.mac);
     deviceSettingList[curIdx] = deviceSetting;
-    logger.info(`[handleSwitchMQTTMsg] after update device setting => ${JSON.stringify(deviceSetting)}`);
+    logger.info(`[handleSwitchPower] after update device setting => ${JSON.stringify(deviceSetting)}`);
     updateDeviceSettingList(deviceSettingList);
 
     // 3. 同步到iHost
     const res = await getIHostSyncDeviceList();
     if (res.error !== 0) {
-        logger.error(`[handleSwitchMQTTMsg] get iHost device error => ${JSON.stringify(res)}`)
+        logger.error(`[handleSwitchPower] get iHost device error => ${JSON.stringify(res)}`)
         return;
     }
 
@@ -272,9 +272,9 @@ async function handleSwitchPower(eventData: IMqttReceiveEvent<any>, deviceSettin
                 },
             },
         }
-        logger.info(`[handleSwitchMQTTMsg] device state sync to iHost params ${JSON.stringify(params)}`);
+        logger.info(`[handleSwitchPower] device state sync to iHost params ${JSON.stringify(params)}`);
         const syncRes = await syncDeviceStateToIHost(params);
-        logger.info(`[handleSwitchMQTTMsg] device state sync to iHost result ${JSON.stringify(syncRes)}`);
+        logger.info(`[handleSwitchPower] device state sync to iHost result ${JSON.stringify(syncRes)}`);
     }
 }
 
