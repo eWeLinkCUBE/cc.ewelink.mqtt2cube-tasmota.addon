@@ -43,15 +43,15 @@ async function resubscribeMQTTTopic(newDeviceSetting: TDeviceSetting, oldDeviceS
  */
 async function handleMQTTReceiveMsg(eventData: IMqttReceiveEvent<any>) {
     try {
-        logger.info(`[handleMQTTReceiveMsg] topic ${eventData.topic} receive msg => ${typeof eventData.data === 'string' ? eventData.data : JSON.stringify(eventData.data, null, 2)}`);
+        logger.info(`[handleMQTTReceiveMsg] topic ${eventData.topic} receive msg => ${typeof eventData.data === 'string' ? eventData.data : JSON.stringify(eventData.data)}`);
         const { topic } = eventData;
-    
+
         // 处理discovery信息
         if (isDiscoveryMsg(topic)) {
             await initByDiscoveryMsg(eventData as IMqttReceiveEvent<IDiscoveryMsg>);
             return;
         }
-    
+
         // 根据对应的设备类别调用对应的处理方法
         const deviceSettingList = getDeviceSettingList();
         for (const deviceSetting of deviceSettingList) {
@@ -59,7 +59,7 @@ async function handleMQTTReceiveMsg(eventData: IMqttReceiveEvent<any>) {
             if (!func) return;
             await func(eventData, deviceSetting);
         }
-    } catch(err) {
+    } catch (err) {
         logger.error(`[handleMQTTReceiveMsg] handle MQTT receive message error: ${err}`);
     }
 }
@@ -153,11 +153,11 @@ async function subscribeAllTopic(deviceSetting: TDeviceSetting): Promise<void> {
 
     if (deviceSetting.display_category === EDeviceType.SWITCH) {
         const { mqttTopics } = deviceSetting
-        const { state_topic, poll_topic, result_topic, fallback_topic, availability_topic, power_topics } = mqttTopics;
+        const { state_topic, poll_topic, result_topic, availability_topic, power_topics } = mqttTopics;
         mqttClient.subscribe(state_topic);
         mqttClient.subscribe(poll_topic);
         mqttClient.subscribe(result_topic);
-        mqttClient.subscribe(fallback_topic);
+        // mqttClient.subscribe(fallback_topic);
         mqttClient.subscribe(availability_topic);
         power_topics.forEach(topic => mqttClient.subscribe(topic));
     }
@@ -184,11 +184,11 @@ async function unsubscribeAllTopic(deviceSetting: TDeviceSetting): Promise<void>
 
     if (deviceSetting.display_category === EDeviceType.SWITCH) {
         const { mqttTopics } = deviceSetting
-        const { state_topic, poll_topic, result_topic, fallback_topic, availability_topic, power_topics } = mqttTopics;
+        const { state_topic, poll_topic, result_topic, availability_topic, power_topics } = mqttTopics;
         mqttClient.unsubscribe(state_topic);
         mqttClient.unsubscribe(poll_topic);
         mqttClient.unsubscribe(result_topic);
-        mqttClient.unsubscribe(fallback_topic);
+        // mqttClient.unsubscribe(fallback_topic);
         mqttClient.unsubscribe(availability_topic);
         power_topics.forEach(topic => mqttClient.unsubscribe(topic));
     }
@@ -215,11 +215,8 @@ async function handleSwitchPower(eventData: IMqttReceiveEvent<any>, deviceSettin
     // 1. 生成更新内容
     if (isString) {
         const topicSplit = topic.split('/');
-        console.log(`SL : file: mqtt.ts:213 : handleSwitchPower : topicSplit:`, topicSplit);
         powerString = topicSplit[topicSplit.length - 1];
-        console.log(`SL : file: mqtt.ts:214 : handleSwitchPower : powerString:`, powerString);
         powerState = eventData.data;
-        console.log(`SL : file: mqtt.ts:216 : handleSwitchPower : powerState :`, powerState );
     } else {
         const payload = eventData.data
         powerString = Object.keys(payload).find(keys => keys.includes('POWER')) as string;

@@ -60,23 +60,25 @@ class MQTT {
         let hasInit = false;
 
         return new Promise((resolve, reject) => {
-            const clientId = uuid();
-            connectOption.clientId = clientId;
+            // 每次连接都生成新的clientID，避免多次连接后clientId冲突
+            connectOption.clientId = uuid();
 
             if (username && pwd) {
                 connectOption.username = username;
                 connectOption.password = pwd;
             }
             logger.error(`[mqtt] connect option => ${JSON.stringify(connectOption)}`)
+
             this.client = mqtt.connect(mqttUrl, connectOption);
+            // 设监听事件限制为无限
             this.client.setMaxListeners(0);
 
             const onConnect = this.#onConnect.bind(this);
             this.client.on('connect', async (packet) => {
-                logger.error('[mqtt] connected to MQTT server!!!!', JSON.stringify(packet));
-                // logger.error('[mqtt] mqtt is reconnecting');
-                await onConnect();
+                logger.error('[mqtt] ===================mqtt connected===================', JSON.stringify(packet));
                 hasInit = true;
+
+                // 连上后需要发送SSE并将断连时离线的设备上线
                 const mqttConnected = getMQTTConnected();
                 if (!mqttConnected) {
                     SSE.send({
@@ -86,6 +88,10 @@ class MQTT {
                     updateMQTTConnected(true);
                     await allTasmotaDeviceOnOrOffline('online');
                 }
+
+                // 订阅各类topic
+                await onConnect();
+
                 resolve(1);
             });
 
@@ -99,7 +105,7 @@ class MQTT {
 
 
             this.client.on('close', async () => {
-                logger.error(`[mqtt] mqtt connect close`);
+                logger.error(`[mqtt] ===================mqtt close===================`);
                 const mqttConnected = getMQTTConnected();
                 if (mqttConnected) {
                     await this.#connectedMqtt();
@@ -131,7 +137,7 @@ class MQTT {
             // })
 
             this.client.on('error', async (err) => {
-                logger.error(`[mqtt] mqtt connect error => ${err.message} ${hasInit}`);
+                logger.error(`[mqtt] ===================mqtt error=================== ${err.message} ${hasInit}`);
                 const mqttConnected = getMQTTConnected();
                 if (mqttConnected) {
                     await this.#connectedMqtt();
@@ -211,8 +217,7 @@ class MQTT {
      * @returns 
      */
     async onMessage(topic: string, payload: Buffer, packet: IPublishPacket) {
-        
-        logger.info(`[mqtt] onMessage init params`, topic, payload, payload.length, JSON.stringify(packet));
+        logger.error('[mqtt] ===================mqtt receive message===================, ', topic, payload, payload.length, JSON.stringify(packet));
 
         if (this.publishedTopics.has(topic)) {
             logger.error("[mqtt] receive same topic as I send it => ", topic, this.publishedTopics);
@@ -247,6 +252,7 @@ class MQTT {
      */
     subscribe(topic: string, opt?: IClientSubscribeOptions) {
         if (!topic) return;
+        logger.info(`[mqtt] ===========================subscribe topic ${topic}===========================`)
         logger.info(`[mqtt] subscribe topic ${topic} ${opt ? 'with option' + opt : ''}`)
         opt = opt ? Object.assign({}, { qos: 2, rap: true }, opt) : { qos: 2, rap: true };
         logger.info(`[mqtt] subscribe topic option ${JSON.stringify(opt)}`)
@@ -261,9 +267,9 @@ class MQTT {
      * @returns 
      */
     unsubscribe(topic: string) {
-        if (!topic) return;
-        logger.info(`[mqtt] unsubscribe topic ${topic}`)
-        this.client!.unsubscribe(topic);
+        if (!topic || !this.client) return;
+        logger.info(`[mqtt] ===========================unsubscribe topic ${topic}===========================`)
+        this.client.unsubscribe(topic);
     }
 
     /**
@@ -291,7 +297,7 @@ class MQTT {
             sendPayload = JSON.stringify(payload);
         };
 
-        logger.info(`publish ==========> `, topic, sendPayload, actualOptions);
+        logger.info(`publish topic==========> `, topic, sendPayload, actualOptions);
 
         return new Promise((resolve, reject) => {
             this.client!.publish(
