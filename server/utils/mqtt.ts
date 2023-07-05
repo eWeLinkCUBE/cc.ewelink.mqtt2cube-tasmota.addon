@@ -109,8 +109,6 @@ async function handleSwitchMQTTMsg(eventData: IMqttReceiveEvent<any>, deviceSett
         logger.info(`[handleSwitchMQTTMsg] here is state topic ${eventData.topic}`);
         if (typeof eventData.data === 'string') return;
 
-
-
         // 处理POWER事件
         const isPowerTopic = isCertainTopic(eventData.data, 'power');
         logger.info(`[handleSwitchMQTTMsg] isPowerTopic ${isPowerTopic}`);
@@ -192,7 +190,7 @@ async function subscribeAllTopic(deviceSetting: TDeviceSetting): Promise<void> {
         mqttClient.subscribe(state_topic);
         mqttClient.subscribe(result_topic);
         mqttClient.subscribe(availability_topic);
-        mqttClient.subscribe(`${state_topic_prefix}STATE`);
+        mqttClient.subscribe(`${state_topic_prefix}#`);
         power_topics.forEach(topic => mqttClient.subscribe(topic));
     }
 

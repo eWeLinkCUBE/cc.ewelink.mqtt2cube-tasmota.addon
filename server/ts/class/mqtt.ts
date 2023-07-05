@@ -206,8 +206,8 @@ class MQTT {
         await db.setDbValue('mqttSetting', this.initParams);
         logger.info('[mqtt] Connected to MQTT server');
 
-        // 订阅所有信息
-        this.subscribe(`#`);
+        // 订阅discovery信息
+        this.subscribe(`tasmota/discovery/#`);
     }
 
     /**
