@@ -11,6 +11,7 @@ import { TDeviceSetting, getDeviceSettingList, updateDeviceSettingList } from ".
 import { getIHostSyncDeviceList, syncDeviceOnlineToIHost, syncDeviceStateToIHost } from '../cube-api/api';
 import { checkTasmotaDeviceInIHost } from './device';
 import { IState, ISwitch } from '../ts/interface/ISwitch';
+import SSE from '../ts/class/sse';
 
 const DEVICE_TYPE_TO_FUNC_MAPPING = {
     [EDeviceType.SWITCH]: handleSwitchMQTTMsg,
@@ -329,8 +330,28 @@ async function handleSwitchPower(eventData: IMqttReceiveEvent<any>, deviceSettin
 async function handleDeviceOnlineOffline(eventData: IMqttReceiveEvent<any>, deviceSetting: TDeviceSetting) {
     logger.info(`[handleDeviceOnlineOffline] here is LWT topic`);
     const deviceSettingList = getDeviceSettingList();
-    const { mqttTopics: { availability_online } } = deviceSetting;
-    deviceSetting.online = eventData.data === availability_online;
+    const { mqttTopics: { availability_online }, mac } = deviceSetting;
+    const online = eventData.data === availability_online;
+    deviceSetting.online = online;
+
+    // 更新到缓存中
+    const curIdx = deviceSettingList.findIndex(curDeviceSetting => curDeviceSetting.mac === deviceSetting.mac);
+    deviceSettingList[curIdx] = deviceSetting;
+    logger.info(`[handleSwitchMQTTMsg] after update device setting => ${JSON.stringify(deviceSetting)}`);
+    updateDeviceSettingList(deviceSettingList);
+
+    // 发送SSE告知前端
+    SSE.send({
+        name: 'device_online_status_report',
+        data: {
+            deviceId: mac,
+            online
+        }
+    })
+
+
+
+    // 将离线状态同步到iHost
     const res = await getIHostSyncDeviceList();
     if (res.error !== 0) {
         logger.error(`[handleSwitchMQTTMsg] get iHost device error => ${JSON.stringify(res)}`)
@@ -352,7 +373,7 @@ async function handleDeviceOnlineOffline(eventData: IMqttReceiveEvent<any>, devi
                     third_serial_number: deviceSetting.mac,
                 },
                 payload: {
-                    online: deviceSetting.online
+                    online
                 },
             },
         }
@@ -362,10 +383,7 @@ async function handleDeviceOnlineOffline(eventData: IMqttReceiveEvent<any>, devi
     }
 
 
-    const curIdx = deviceSettingList.findIndex(curDeviceSetting => curDeviceSetting.mac === deviceSetting.mac);
-    deviceSettingList[curIdx] = deviceSetting;
-    logger.info(`[handleSwitchMQTTMsg] after update device setting => ${JSON.stringify(deviceSetting)}`);
-    updateDeviceSettingList(deviceSettingList);
+
 }
 
 
