@@ -152,18 +152,31 @@ export async function initByDiscoveryMsg(eventData: IMqttReceiveEvent<IDiscovery
                 }
             });
         } else {
-            // 4. 缓存如果存在，对比缓存中哪些东西产生了变化
+            
+            // 5. 缓存如果存在，对比缓存中哪些东西产生了变化
             const oldDeviceSetting = deviceSettingList[deviceSettingIdx];
             const newDeviceSetting = await compareSetting(curDeviceSetting, oldDeviceSetting);
+            
+            // 6. 比较设备名称是否发生变化，发生变化则推送SSE给前端
+            if(oldDeviceSetting.name !== newDeviceSetting.name) {
+                const { mac, name } = newDeviceSetting;
+                SSE.send({
+                    name: 'device_name_changed_report',
+                    data: {
+                        deviceId: mac,
+                        name
+                    }
+                })
+            }
 
-            // 5. 将最终生成的新setting更新回去
+            // 7. 将最终生成的新setting更新回去
             mqttUtils.resubscribeMQTTTopic(curDeviceSetting, oldDeviceSetting)
             deviceSettingList[deviceSettingIdx] = newDeviceSetting;
             updateDeviceSettingList(deviceSettingList);
         }
 
 
-        // 6. 推送topic查询设备状态
+        // 8. 推送topic查询设备状态
         const mqttClient = await getMQTTClient();
         if (!mqttClient) {
             logger.error(`[initByDiscoveryMsg] mqtt client doesn't exist`);
