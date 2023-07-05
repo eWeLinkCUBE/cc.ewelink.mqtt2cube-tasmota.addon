@@ -65,7 +65,7 @@ export interface ISwitch {
         /** 设备状态上报topic TELE-TOPIC-BY-CONFIG eg: tele/tasmota_plug/STATE*/
         state_topic: string;
         /** 设备状态上报topic 前缀，供so4配置为1时使用 eg: stat/tasmota_plug/ */
-        state_topic_prefix: string;
+        state_topic_all: string;
         /** fallback topic eg: cmnd/DVES_CC263B_fb/*/
         fallback_topic: string;
         /** power状态的topic，只有当so4为1时才会使用 */

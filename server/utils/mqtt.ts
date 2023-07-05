@@ -76,7 +76,7 @@ async function handleSwitchMQTTMsg(eventData: IMqttReceiveEvent<any>, deviceSett
     logger.info(`[handleSwitchMQTTMsg] handling switch ${JSON.stringify(eventData)}, deviceSetting => ${JSON.stringify(deviceSetting)}`);
     if (deviceSetting.display_category !== EDeviceType.SWITCH) return;
     const { topic } = eventData;
-    const { mqttTopics: { state_topic, result_topic, availability_topic, power_topics, state_topic_prefix }, so } = deviceSetting;
+    const { mqttTopics: { state_topic, result_topic, availability_topic, power_topics, state_topic_all }, so } = deviceSetting;
 
 
     // 处理setOption变化事件
@@ -87,7 +87,7 @@ async function handleSwitchMQTTMsg(eventData: IMqttReceiveEvent<any>, deviceSett
     if (isSetOptionChanged || so["4"] === 1) {
         logger.info(`[handleSwitchMQTTMsg] handle setOption 4`)
         // 处理power事件
-        const powerOrStateTopic = power_topics.includes(topic) || `${state_topic_prefix}STATE` === topic;
+        const powerOrStateTopic = power_topics.includes(topic) || `${state_topic_all}STATE` === topic;
         logger.info(`[handleSwitchMQTTMsg] powerOrStateTopic => ${powerOrStateTopic}`);
         if (powerOrStateTopic) {
             logger.info(`[handleSwitchMQTTMsg] handle setOption4's switch power`);
@@ -186,11 +186,11 @@ async function subscribeAllTopic(deviceSetting: TDeviceSetting): Promise<void> {
 
     if (deviceSetting.display_category === EDeviceType.SWITCH) {
         const { mqttTopics } = deviceSetting
-        const { state_topic, result_topic, availability_topic, power_topics, state_topic_prefix } = mqttTopics;
+        const { state_topic, result_topic, availability_topic, power_topics, state_topic_all } = mqttTopics;
         mqttClient.subscribe(state_topic);
         mqttClient.subscribe(result_topic);
         mqttClient.subscribe(availability_topic);
-        mqttClient.subscribe(`${state_topic_prefix}#`);
+        mqttClient.subscribe(state_topic_all);
         power_topics.forEach(topic => mqttClient.subscribe(topic));
     }
 
@@ -216,10 +216,11 @@ async function unsubscribeAllTopic(deviceSetting: TDeviceSetting): Promise<void>
 
     if (deviceSetting.display_category === EDeviceType.SWITCH) {
         const { mqttTopics } = deviceSetting
-        const { state_topic, result_topic, availability_topic, power_topics } = mqttTopics;
+        const { state_topic, result_topic, availability_topic, power_topics, state_topic_all } = mqttTopics;
         mqttClient.unsubscribe(state_topic);
         mqttClient.unsubscribe(result_topic);
         mqttClient.unsubscribe(availability_topic);
+        mqttClient.unsubscribe(state_topic_all);
         power_topics.forEach(topic => mqttClient.unsubscribe(topic));
     }
 

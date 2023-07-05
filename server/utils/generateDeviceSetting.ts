@@ -170,7 +170,7 @@ function getSwitchSetting(discovery: IDiscoveryMsg): ISwitch {
             result_topic: getTopiCommandResult(discovery),
             state_power_off: getStatePowerOff(discovery),
             state_power_on: getStatePowerOn(discovery),
-            state_topic_prefix: getTopicState(discovery),
+            state_topic_all: getTopicAllStateTopic(discovery),
             state_topic: getTopicTelemetryState(discovery),
             fallback_topic: getFallbackTopicFromMac(mac),
             power_topics
@@ -298,5 +298,15 @@ function getStatePowerOn(discovery: IDiscoveryMsg): string {
  */
 function getTopicTelemetryState(discovery: IDiscoveryMsg): string {
     return getTopicTelemetry(discovery) + 'STATE';
+}
+
+
+/**
+ * @description 获取设备的上报的所有state topic
+ * @param {IDiscoveryMsg} discovery
+ * @returns {*}  {string}
+ */
+function getTopicAllStateTopic(discovery: IDiscoveryMsg): string {
+    return getTopicState(discovery) + '#';
 }
 

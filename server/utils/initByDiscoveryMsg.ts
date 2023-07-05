@@ -124,7 +124,7 @@ export async function initByDiscoveryMsg(eventData: IMqttReceiveEvent<IDiscovery
             // 3. 缓存如果不存在，直接更新到缓存中去
             deviceSettingList.push(curDeviceSetting);
             updateDeviceSettingList(deviceSettingList);
-            // mqttUtils.resubscribeMQTTTopic(curDeviceSetting);
+            mqttUtils.resubscribeMQTTTopic(curDeviceSetting);
             const { name, display_category, mac, online } = curDeviceSetting;
             logger.info(`[initByDiscoveryMsg] device ${curDeviceSetting.name} is not exist in cache`)
             let synced = false;
@@ -157,7 +157,7 @@ export async function initByDiscoveryMsg(eventData: IMqttReceiveEvent<IDiscovery
             const newDeviceSetting = await compareSetting(curDeviceSetting, oldDeviceSetting);
 
             // 5. 将最终生成的新setting更新回去
-            // mqttUtils.resubscribeMQTTTopic(curDeviceSetting, oldDeviceSetting)
+            mqttUtils.resubscribeMQTTTopic(curDeviceSetting, oldDeviceSetting)
             deviceSettingList[deviceSettingIdx] = newDeviceSetting;
             updateDeviceSettingList(deviceSettingList);
         }
