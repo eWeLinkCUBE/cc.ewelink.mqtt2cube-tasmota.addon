@@ -145,7 +145,7 @@ const save = async () => {
                 params[option.key] = option.value.trim();
                 break;
         }
-        params[option.key] = option.key === 'pwd' ? encryptAES(option.value.trim(), APP_SECRET) : option.value.trim();
+        params[option.key] = option.key === 'pwd' ? option.value.trim() ? encryptAES(option.value.trim(), APP_SECRET) : '' : option.value.trim();
     }
     console.log('配置数据：', params);
     const isSuccess = await setMqttSettings(params);
