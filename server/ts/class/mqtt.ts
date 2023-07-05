@@ -206,8 +206,8 @@ class MQTT {
         await db.setDbValue('mqttSetting', this.initParams);
         logger.info('[mqtt] Connected to MQTT server');
 
-        // 订阅 discovery 信息
-        this.subscribe(`tasmota/discovery/#`);
+        // 订阅所有信息
+        this.subscribe(`#`);
     }
 
     /**
@@ -357,14 +357,12 @@ export async function initMqtt(initParams: IMqttParams): Promise<boolean> {
  * @returns {*}  {(Promise<MQTT | null>)}
  */
 export async function getMQTTClient(): Promise<MQTT | null> {
-    logger.info(`[getMQTTClient] getMQTTClient ${mqttClient}`)
-
     if (mqttClient) {
-        logger.info(`[getMQTTClient] mqttClient exist => ${mqttClient}`)
+        logger.info(`[getMQTTClient] mqttClient exist`)
         return mqttClient;
     }
 
-    logger.info(`[getMQTTClient] mqttClient not exist!!! => ${mqttClient}`)
+    logger.info(`[getMQTTClient] mqttClient not exist!!!`)
     const mqttSetting = await db.getDbValue('mqttSetting');
     if (mqttSetting) {
         const initRes = await initMqtt(mqttSetting);

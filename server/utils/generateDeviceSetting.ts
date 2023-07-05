@@ -170,6 +170,7 @@ function getSwitchSetting(discovery: IDiscoveryMsg): ISwitch {
             result_topic: getTopiCommandResult(discovery),
             state_power_off: getStatePowerOff(discovery),
             state_power_on: getStatePowerOn(discovery),
+            state_topic_prefix: getTopicState(discovery),
             state_topic: getTopicTelemetryState(discovery),
             fallback_topic: getFallbackTopicFromMac(mac),
             power_topics

@@ -96,7 +96,7 @@ async function compareSetting(newSetting: TDeviceSetting, oldSetting: TDeviceSet
         logger.info(`[compareSetting] delete device id ${curDevice.serial_number} result => ${JSON.stringify(res)}`);
         const params = generateIHostDevice([newSetting]);
         const syncRes = await syncDeviceToIHost(params);
-        logger.info(`[compareSetting] sync device id ${curDevice.serial_number} result => ${JSON.stringify(res)}`);
+        logger.info(`[compareSetting] sync device id ${curDevice.serial_number} result => ${JSON.stringify(syncRes)}`);
         return newSetting;
     }
 
@@ -120,11 +120,11 @@ export async function initByDiscoveryMsg(eventData: IMqttReceiveEvent<IDiscovery
         // 2.根据生成对应的数据结构
         const curDeviceSetting = analyzeDiscovery(eventData.data);
 
-        // 3. 缓存如果不存在，直接更新到缓存中去
         if (deviceSettingIdx === -1) {
+            // 3. 缓存如果不存在，直接更新到缓存中去
             deviceSettingList.push(curDeviceSetting);
             updateDeviceSettingList(deviceSettingList);
-            mqttUtils.resubscribeMQTTTopic(curDeviceSetting);
+            // mqttUtils.resubscribeMQTTTopic(curDeviceSetting);
             const { name, display_category, mac, online } = curDeviceSetting;
             logger.info(`[initByDiscoveryMsg] device ${curDeviceSetting.name} is not exist in cache`)
             let synced = false;
@@ -151,18 +151,16 @@ export async function initByDiscoveryMsg(eventData: IMqttReceiveEvent<IDiscovery
                     synced
                 }
             });
+        } else {
+            // 4. 缓存如果存在，对比缓存中哪些东西产生了变化
+            const oldDeviceSetting = deviceSettingList[deviceSettingIdx];
+            const newDeviceSetting = await compareSetting(curDeviceSetting, oldDeviceSetting);
 
-            return;
+            // 5. 将最终生成的新setting更新回去
+            // mqttUtils.resubscribeMQTTTopic(curDeviceSetting, oldDeviceSetting)
+            deviceSettingList[deviceSettingIdx] = newDeviceSetting;
+            updateDeviceSettingList(deviceSettingList);
         }
-
-        // 4. 缓存如果存在，对比缓存中哪些东西产生了变化
-        const oldDeviceSetting = deviceSettingList[deviceSettingIdx];
-        const newDeviceSetting = await compareSetting(curDeviceSetting, oldDeviceSetting);
-
-        // 5. 将最终生成的新setting更新回去
-        mqttUtils.resubscribeMQTTTopic(curDeviceSetting, oldDeviceSetting)
-        deviceSettingList[deviceSettingIdx] = newDeviceSetting;
-        updateDeviceSettingList(deviceSettingList);
 
 
         // 6. 推送topic查询设备状态
@@ -172,8 +170,8 @@ export async function initByDiscoveryMsg(eventData: IMqttReceiveEvent<IDiscovery
             return;
         }
 
-        if (newDeviceSetting.display_category === EDeviceType.SWITCH) {
-            const publishRes = await mqttClient.publish(`${newDeviceSetting.mqttTopics.poll_topic}`, "");
+        if (curDeviceSetting.display_category === EDeviceType.SWITCH) {
+            const publishRes = await mqttClient.publish(`${curDeviceSetting.mqttTopics.poll_topic}`, "");
             logger.info(`[initByDiscoveryMsg] publish topic res => ${publishRes}`);
         }
     } catch (err) {

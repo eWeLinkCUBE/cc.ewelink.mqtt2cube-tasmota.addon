@@ -3,7 +3,7 @@ import logger from "../log";
 import { v4 as uuid } from 'uuid';
 import { getMQTTClient } from "../ts/class/mqtt";
 import EDeviceType from "../ts/enum/EDeviceType";
-import { IDiscoveryMsg } from "../ts/interface/IDiscoveryMsg";
+import { IDiscoveryMsg, ISetOptions } from "../ts/interface/IDiscoveryMsg";
 import { IMqttReceiveEvent, IStateTopic } from "../ts/interface/IMqtt";
 import { INotSupport } from "../ts/interface/INotSupport";
 import { initByDiscoveryMsg } from "./initByDiscoveryMsg";
@@ -55,6 +55,7 @@ async function handleMQTTReceiveMsg(eventData: IMqttReceiveEvent<any>) {
         // 根据对应的设备类别调用对应的处理方法
         const deviceSettingList = getDeviceSettingList();
         for (const deviceSetting of deviceSettingList) {
+            logger.error(`[handleMQTTReceiveMsg] deviceSetting => ${JSON.stringify(deviceSetting)}`);
             const func = _.get(DEVICE_TYPE_TO_FUNC_MAPPING, deviceSetting.display_category);
             if (!func) return;
             await func(eventData, deviceSetting);
@@ -72,26 +73,58 @@ async function handleMQTTReceiveMsg(eventData: IMqttReceiveEvent<any>) {
  * @returns {*} 
  */
 async function handleSwitchMQTTMsg(eventData: IMqttReceiveEvent<any>, deviceSetting: TDeviceSetting): Promise<void> {
-    logger.info(`[handleSwitchMQTTMsg] handling switch ${JSON.stringify(eventData)}`);
+    logger.info(`[handleSwitchMQTTMsg] handling switch ${JSON.stringify(eventData)}, deviceSetting => ${JSON.stringify(deviceSetting)}`);
     if (deviceSetting.display_category !== EDeviceType.SWITCH) return;
     const { topic } = eventData;
-    const { mqttTopics: { state_topic, result_topic, availability_topic, power_topics }, so } = deviceSetting;
+    const { mqttTopics: { state_topic, result_topic, availability_topic, power_topics, state_topic_prefix }, so } = deviceSetting;
 
-    if (power_topics.includes(topic) && so["4"] === 1) {
-        logger.info(`[handleSwitchMQTTMsg] handle setOption4's switch power`)
-        await handleSwitchPower(eventData, deviceSetting);
-        return;
+
+    // 处理setOption变化事件
+    const isSetOptionChanged = topic.toLowerCase().includes('setoption');
+    logger.info(`[handleSwitchMQTTMsg] powerOrStateTopic => ${topic} ${isSetOptionChanged}`);
+
+    // 如果topic已经包含SetOption代表setOption4已开但缓存未更新/setOption4需要特殊处理
+    if (isSetOptionChanged || so["4"] === 1) {
+        logger.info(`[handleSwitchMQTTMsg] handle setOption 4`)
+        // 处理power事件
+        const powerOrStateTopic = power_topics.includes(topic) || `${state_topic_prefix}STATE` === topic;
+        logger.info(`[handleSwitchMQTTMsg] powerOrStateTopic => ${powerOrStateTopic}`);
+        if (powerOrStateTopic) {
+            logger.info(`[handleSwitchMQTTMsg] handle setOption4's switch power`);
+            await handleSwitchPower(eventData, deviceSetting);
+            return;
+        }
+
+
+        if (isSetOptionChanged) {
+            logger.info(`[handleSwitchMQTTMsg] handle setOption change`);
+            handleSetOptionChange(eventData, deviceSetting);
+            return;
+        }
+
+        return
     }
 
     if (topic.toLowerCase() === state_topic.toLowerCase() || topic.toLowerCase() === result_topic.toLowerCase()) {
         logger.info(`[handleSwitchMQTTMsg] here is state topic ${eventData.topic}`);
-        if(typeof eventData.data === 'string') return;
+        if (typeof eventData.data === 'string') return;
 
-        const isPowerTopic = Object.keys(eventData.data).some(key => key.toLowerCase().includes('power'));
+
+
         // 处理POWER事件
+        const isPowerTopic = isCertainTopic(eventData.data, 'power');
+        logger.info(`[handleSwitchMQTTMsg] isPowerTopic ${isPowerTopic}`);
         if (isPowerTopic) {
-            logger.info(`[handleSwitchMQTTMsg] handle switch power`)
+            logger.info(`[handleSwitchMQTTMsg] handle switch power`);
             await handleSwitchPower(eventData, deviceSetting);
+        }
+
+        // 处理setOption变化事件
+        const isSetOptionChanged = isCertainTopic(eventData.data, 'setOption');
+        logger.info(`[handleSwitchMQTTMsg] isSetOptionChanged ${isSetOptionChanged}`);
+        if (isSetOptionChanged) {
+            logger.info(`[handleSwitchMQTTMsg] handle setOption change`);
+            handleSetOptionChange(eventData, deviceSetting);
         }
 
         return;
@@ -155,12 +188,11 @@ async function subscribeAllTopic(deviceSetting: TDeviceSetting): Promise<void> {
 
     if (deviceSetting.display_category === EDeviceType.SWITCH) {
         const { mqttTopics } = deviceSetting
-        const { state_topic, poll_topic, result_topic, availability_topic, power_topics } = mqttTopics;
+        const { state_topic, result_topic, availability_topic, power_topics, state_topic_prefix } = mqttTopics;
         mqttClient.subscribe(state_topic);
-        mqttClient.subscribe(poll_topic);
         mqttClient.subscribe(result_topic);
-        // mqttClient.subscribe(fallback_topic);
         mqttClient.subscribe(availability_topic);
+        mqttClient.subscribe(`${state_topic_prefix}STATE`);
         power_topics.forEach(topic => mqttClient.subscribe(topic));
     }
 
@@ -186,11 +218,9 @@ async function unsubscribeAllTopic(deviceSetting: TDeviceSetting): Promise<void>
 
     if (deviceSetting.display_category === EDeviceType.SWITCH) {
         const { mqttTopics } = deviceSetting
-        const { state_topic, poll_topic, result_topic, availability_topic, power_topics } = mqttTopics;
+        const { state_topic, result_topic, availability_topic, power_topics } = mqttTopics;
         mqttClient.unsubscribe(state_topic);
-        mqttClient.unsubscribe(poll_topic);
         mqttClient.unsubscribe(result_topic);
-        // mqttClient.unsubscribe(fallback_topic);
         mqttClient.unsubscribe(availability_topic);
         power_topics.forEach(topic => mqttClient.unsubscribe(topic));
     }
@@ -207,6 +237,8 @@ async function handleSwitchPower(eventData: IMqttReceiveEvent<any>, deviceSettin
     const { mqttTopics: { state_power_on, state_power_off }, capabilities } = deviceSetting;
     const toggleCount = capabilities.filter(capability => capability.capability === 'toggle').length;
     const channelLength = toggleCount === 0 ? 1 : toggleCount;
+    logger.info(`[handleSwitchPower] channelLength => ${channelLength}, ${JSON.stringify(eventData)}`);
+
     const { topic } = eventData;
 
     // POWER topic会发送两个回复，一个为JSON格式，一个为字符串格式，不需要重复处理
@@ -218,20 +250,12 @@ async function handleSwitchPower(eventData: IMqttReceiveEvent<any>, deviceSettin
 
 
     // 1. 生成更新内容
-    const payload = eventData.data;
-    /** power 字符串，单通道为POWER 多通道为POWER<n> */
-    const powerString = Object.keys(payload).find(keys => keys.includes('POWER')) as string;
-    /** power 状态 */
-    const powerState = eventData.data[powerString];
     let state: {} | IState = {};
-
-    logger.info(`[handleSwitchPower] receiving power string: ${powerString} and power state: ${powerState}`);
-
-
+    const payload = eventData.data;
 
     // 根据单通道与多通道生成更新所需的state
     if (channelLength === 1) {
-        const power = powerState === state_power_on ? "on" : "off";
+        const power = payload.POWER === state_power_on ? "on" : "off";
         deviceSetting.state.power.powerState = power;
         state = {
             power: {
@@ -239,28 +263,29 @@ async function handleSwitchPower(eventData: IMqttReceiveEvent<any>, deviceSettin
             }
         };
     } else {
-        /** 检测值是否有效 */
-        const validState = [state_power_on, state_power_off].includes(powerState);
-        if (!validState) return;
-        /** 开关状态 */
-        const power = powerState === state_power_on ? 'on' : 'off'
-        /** 通道数 */
-        const channel = powerString.split('POWER')[1];
-        if (!channel) return;
-        deviceSetting.state.toggle![channel].toggleState = power;
-        state = {
-            toggle: {
-                [channel]: {
+        for (let i = 1; i <= channelLength; i++) {
+            const key = `POWER${i}` as keyof IStateTopic;
+            const value = payload[key];
+            // if (powerString !== key) continue;
+            const validState = [state_power_on, state_power_off].includes(value);
+            if (!validState) continue;
+            const power = value === state_power_on ? 'on' : 'off'
+            deviceSetting.state.toggle![i].toggleState = power;
+            const toggle: IState = _.get(state, ['toggle'], {})
+            _.assign(toggle, {
+                [i]: {
                     toggleState: power
                 }
-            }
+            })
+
+            state = { toggle }
         }
     }
 
-
-
-
     logger.info(`[handleSwitchPower] ${JSON.stringify(state, null, 2)}`);
+
+    // 对不上的设备无需继续操作
+    if (_.isEmpty(state)) return;
 
     // 2. 更新缓存数据
     const deviceSettingList = getDeviceSettingList();
@@ -343,6 +368,48 @@ async function handleDeviceOnlineOffline(eventData: IMqttReceiveEvent<any>, devi
     logger.info(`[handleSwitchMQTTMsg] after update device setting => ${JSON.stringify(deviceSetting)}`);
     updateDeviceSettingList(deviceSettingList);
 }
+
+
+/**
+ * @description 处理setOption选项的变化
+ * @param {IMqttReceiveEvent<any>} eventData
+ * @param {TDeviceSetting} deviceSetting
+ * @returns {*} 
+ */
+function handleSetOptionChange(eventData: IMqttReceiveEvent<any>, deviceSetting: TDeviceSetting) {
+    const { data } = eventData;
+    const { so } = deviceSetting as INotSupport;
+    const setOptionKey = Object.keys(data)[0];
+
+    for (const key in so) {
+        if (`setoption${key}` === setOptionKey.toLowerCase()) {
+            so[key as keyof ISetOptions] = data[setOptionKey] === 'ON' ? 1 : 0;
+        }
+    }
+
+    logger.info(`[handleSetOptionChange] after set option changed => ${JSON.stringify(so)}`);
+
+    deviceSetting.so = so;
+
+    const deviceSettingList = getDeviceSettingList();
+    const curIdx = deviceSettingList.findIndex(curDeviceSetting => curDeviceSetting.mac === deviceSetting.mac);
+    deviceSettingList[curIdx] = deviceSetting;
+    logger.info(`[handleSetOptionChange] after update device setting => ${JSON.stringify(deviceSetting)}`);
+    updateDeviceSettingList(deviceSettingList);
+}
+
+
+
+/**
+ * @description 判断 result topic 是否为特定topic
+ * @param {object} data
+ * @param {('power' | 'setOption')} topicType
+ * @returns {*}  {boolean}
+ */
+function isCertainTopic(data: object, topicType: 'power' | 'setOption'): boolean {
+    return Object.keys(data).some(key => key.toLowerCase().includes(topicType.toLowerCase()));
+}
+
 
 
 export default {
