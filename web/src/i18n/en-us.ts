@@ -1,6 +1,8 @@
 const en = {
     ERROR: {
         500: 'Failed, please try later',
+        1001: 'MQTT broker connection parameter error, please check and re-enter',
+        1701: 'Failed to get iHost access token, please try again.'
     },
     DEVICE_LIST_TITLE: 'Device list',
     AUTO_SYNC_TIP: 'Auto-sync new-added devices',
@@ -56,7 +58,6 @@ const en = {
     FINISH: 'Complete',
     CANCEL: 'Cancel',
     SAVE: 'Save',
-    GET_TOKEN_ERROR: 'Failed to get iHost access token, please try again.',
     GET_TOKEN_SUCCESS: 'The token has been obtained, click the button again to synchronize the device',
     DEVICE_SYNC_SUCCESS: '{number} devices synced successfully',
 };

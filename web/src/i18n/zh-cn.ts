@@ -1,6 +1,8 @@
 const cn = {
     ERROR: {
         500: '操作失败，请稍后重试',
+        1001: 'MQTT broker连接参数错误，请检查后重新输入',
+        1701: '获取凭证失败，请重试'
     },
     DEVICE_LIST_TITLE: '设备列表',
     AUTO_SYNC_TIP: '新增设备自动同步',
@@ -56,7 +58,6 @@ const cn = {
     FINISH: '完成',
     CANCEL: '取消',
     SAVE: '保存',
-    GET_TOKEN_ERROR: '获取凭证失败，请重试',
     GET_TOKEN_SUCCESS: '凭证获取成功，再次点击按钮同步设备',
     DEVICE_SYNC_SUCCESS: '{number} 个设备同步成功',
 };

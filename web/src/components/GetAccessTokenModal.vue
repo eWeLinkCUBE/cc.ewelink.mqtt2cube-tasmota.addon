@@ -102,7 +102,7 @@ const finish = async () => {
     try {
         const response = await getToken();
         if (response.error === 1701) {
-            message.error(t('GET_TOKEN_ERROR'));
+            message.error(t('ERROR[1701]'));
             getAccessTokenNumber.value = 0;
             getIhostAccessToken();
             return;

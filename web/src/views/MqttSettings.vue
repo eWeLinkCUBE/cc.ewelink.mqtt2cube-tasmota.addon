@@ -105,7 +105,7 @@ const setMqttSettings = async (params: IBroker) => {
         saveLoading.value = true;
         const response = await setMqtt(params);
         if (response.error !== 0) {
-            message.error(t('ERROR[500]'));
+            response.error === 1001 ? message.error(t('ERROR[1001]')) : message.error(t('ERROR[500]'));
             saveLoading.value = false;
             return false;
         }

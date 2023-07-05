@@ -337,7 +337,7 @@ const queryTokenTimeUpHandler = () => {
             console.log('syncType:', syncType.value);
             break;
     }
-    message.error(t('GET_TOKEN_ERROR'));
+    message.error(t('ERROR[1701]'));
     etcStore.setGetAccessTokenVisible(false);
     console.log(33333, etcStore.getAccessTokenVisible);
 };

@@ -130,6 +130,7 @@ async function handleSwitchMQTTMsg(eventData: IMqttReceiveEvent<any>, deviceSett
     }
 
     // 处理在线离线
+    logger.info(`[handleSwitchMQTTMsg] handling offline message  => ${topic}  ${availability_topic}`);
     if (topic.toLowerCase() === availability_topic.toLowerCase()) {
         await handleDeviceOnlineOffline(eventData, deviceSetting);
         return;
@@ -328,7 +329,8 @@ async function handleSwitchPower(eventData: IMqttReceiveEvent<any>, deviceSettin
 
 
 async function handleDeviceOnlineOffline(eventData: IMqttReceiveEvent<any>, deviceSetting: TDeviceSetting) {
-    logger.info(`[handleDeviceOnlineOffline] here is LWT topic`);
+    logger.info(`[handleDeviceOnlineOffline] here is LWT topic =================== ${JSON.stringify(eventData)}`);
+    logger.info(`[handleDeviceOnlineOffline] here is LWT topic =================== ${JSON.stringify(deviceSetting)}`);
     const deviceSettingList = getDeviceSettingList();
     const { mqttTopics: { availability_online }, mac } = deviceSetting;
     const online = eventData.data === availability_online;
