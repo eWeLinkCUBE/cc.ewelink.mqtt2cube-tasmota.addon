@@ -19,7 +19,7 @@ export default async function setMQTTBroker(req: Request, res: Response) {
     try {
         const { username = "", pwd = "", host, port } = req.body;
         const decryptedPwd = pwd ? encryption.decryptAES(pwd, config.auth.appSecret) : pwd;
-        const initRes = await initMqtt({ username, pwd: decryptedPwd, host, port });
+        const initRes = await initMqtt({ username, pwd: decryptedPwd, host, port }, true);
         logger.debug(`[setMQTTBroker] init result => ${initRes}`)
         if (!initRes) {
             logger.error(`[setMQTTBroker] mqtt setting is wrong ${JSON.stringify({ username, pwd, host, port })}`)

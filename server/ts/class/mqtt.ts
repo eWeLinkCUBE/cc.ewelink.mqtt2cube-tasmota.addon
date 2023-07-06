@@ -112,6 +112,8 @@ class MQTT {
                     await this.#connectedMqtt();
                 }
 
+
+
                 if (hasInit) {
                     reject(0);
                     return;
@@ -129,19 +131,16 @@ class MQTT {
                 logger.error('[mqtt] mqtt is disconnect', JSON.stringify(packet));
             })
 
-            // this.client.on('packetreceive', (packet) => {
-            //     logger.error('[mqtt] mqtt is packetreceive', JSON.stringify(packet));
-            // })
-
-            // this.client.on('packetsend', (packet) => {
-            //     logger.error('[mqtt] mqtt is packetreceive', JSON.stringify(packet));
-            // })
-
             this.client.on('error', async (err) => {
                 logger.error(`[mqtt] ===================mqtt error=================== ${err.message} ${hasInit}`);
                 const mqttConnected = getMQTTConnected();
                 if (mqttConnected) {
                     await this.#connectedMqtt();
+                }
+
+
+                if (!this.client!.reconnecting) {
+                    this.client!.reconnect();
                 }
 
                 if (hasInit) {
@@ -193,6 +192,7 @@ class MQTT {
     }
 
     async #onConnect() {
+        mqttClient = this;
         // Set timer at interval to check if connected to MQTT server.
         if (this.connectionTimer) {
             clearTimeout(this.connectionTimer);
@@ -321,13 +321,15 @@ class MQTT {
 let mqttClient: null | MQTT = null;
 
 
+
 /**
  * @description 初始化MQTT连接
  * @export
- * @param {IMqttParams} initParams 初始化信息
+ * @param {IMqttParams} initParams
+ * @param {boolean} [failAndDisconnect=false] 连接失败后是否需要断连（用户通过接口连接失败时不断连，会导致用户每保存失败一次MQTT配置都会形成一条新的尝试重连的连接）
  * @returns {*}  {Promise<boolean>}
  */
-export async function initMqtt(initParams: IMqttParams): Promise<boolean> {
+export async function initMqtt(initParams: IMqttParams, failAndDisconnect = false): Promise<boolean> {
     try {
         if (mqttClient) {
             logger.info(`[initMqtt] mqtt already exist. close it`);
@@ -338,7 +340,7 @@ export async function initMqtt(initParams: IMqttParams): Promise<boolean> {
         logger.error(`[initMqtt] init mqtt result => ${res}`);
         if (res !== 1) {
             logger.error(`[initMqtt] init mqtt broker error`);
-            newMqttClient.disconnect();
+            failAndDisconnect && newMqttClient.disconnect();
             return false;
         }
 
