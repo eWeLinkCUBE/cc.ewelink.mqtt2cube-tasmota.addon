@@ -27,6 +27,10 @@ const ERROR_LIST = [
         errMsg: 'mqtt setting is invalid',   // mqtt配置有误
     },
     {
+        errCode: 1101,
+        errMsg: 'mqtt not set yet',   // 尚未配置mqtt
+    },
+    {
         errCode: 1301,
         errMsg: 'device id invalid',   // 设备id无效
     },
