@@ -56,7 +56,7 @@ async function handleMQTTReceiveMsg(eventData: IMqttReceiveEvent<any>) {
         // 根据对应的设备类别调用对应的处理方法
         const deviceSettingList = getDeviceSettingList();
         for (const deviceSetting of deviceSettingList) {
-            logger.error(`[handleMQTTReceiveMsg] deviceSetting => ${JSON.stringify(deviceSetting)}`);
+            logger.error(`[handleMQTTReceiveMsg] current device setting name  => ${deviceSetting.name} current topic => ${eventData.topic}`);
             const func = _.get(DEVICE_TYPE_TO_FUNC_MAPPING, deviceSetting.display_category);
             if (!func) return;
             await func(eventData, deviceSetting);
@@ -80,9 +80,16 @@ async function handleSwitchMQTTMsg(eventData: IMqttReceiveEvent<any>, deviceSett
     const { mqttTopics: { state_topic, result_topic, availability_topic, power_topics, state_topic_all }, so } = deviceSetting;
 
 
+    // 处理在线离线
+    if (topic.toLowerCase() === availability_topic.toLowerCase()) {
+        logger.info(`[handleSwitchMQTTMsg] handling offline message => ${topic}  ${availability_topic}`);
+        await handleDeviceOnlineOffline(eventData, deviceSetting);
+        return;
+    }
+
     // 处理setOption变化事件
     const isSetOptionChanged = topic.toLowerCase().includes('setoption');
-    logger.info(`[handleSwitchMQTTMsg] powerOrStateTopic => ${topic} ${isSetOptionChanged}`);
+    logger.info(`[handleSwitchMQTTMsg] isSetOptionChanged => ${topic} ${isSetOptionChanged}`);
 
     // 如果topic已经包含SetOption代表setOption4已开但缓存未更新/setOption4需要特殊处理
     if (isSetOptionChanged || so["4"] === 1) {
@@ -103,7 +110,7 @@ async function handleSwitchMQTTMsg(eventData: IMqttReceiveEvent<any>, deviceSett
             return;
         }
 
-        return
+        return;
     }
 
     if (topic.toLowerCase() === state_topic.toLowerCase() || topic.toLowerCase() === result_topic.toLowerCase()) {
@@ -126,13 +133,6 @@ async function handleSwitchMQTTMsg(eventData: IMqttReceiveEvent<any>, deviceSett
             handleSetOptionChange(eventData, deviceSetting);
         }
 
-        return;
-    }
-
-    // 处理在线离线
-    logger.info(`[handleSwitchMQTTMsg] handling offline message  => ${topic}  ${availability_topic}`);
-    if (topic.toLowerCase() === availability_topic.toLowerCase()) {
-        await handleDeviceOnlineOffline(eventData, deviceSetting);
         return;
     }
 }
@@ -188,9 +188,9 @@ async function subscribeAllTopic(deviceSetting: TDeviceSetting): Promise<void> {
 
     if (deviceSetting.display_category === EDeviceType.SWITCH) {
         const { mqttTopics } = deviceSetting
-        const { state_topic, result_topic, availability_topic, power_topics, state_topic_all } = mqttTopics;
+        const { state_topic, availability_topic, power_topics, state_topic_all } = mqttTopics;
         mqttClient.subscribe(state_topic);
-        mqttClient.subscribe(result_topic);
+        // mqttClient.subscribe(result_topic);
         mqttClient.subscribe(availability_topic);
         mqttClient.subscribe(state_topic_all);
         power_topics.forEach(topic => mqttClient.subscribe(topic));
@@ -218,9 +218,9 @@ async function unsubscribeAllTopic(deviceSetting: TDeviceSetting): Promise<void>
 
     if (deviceSetting.display_category === EDeviceType.SWITCH) {
         const { mqttTopics } = deviceSetting
-        const { state_topic, result_topic, availability_topic, power_topics, state_topic_all } = mqttTopics;
+        const { state_topic, availability_topic, power_topics, state_topic_all } = mqttTopics;
         mqttClient.unsubscribe(state_topic);
-        mqttClient.unsubscribe(result_topic);
+        // mqttClient.unsubscribe(result_topic);
         mqttClient.unsubscribe(availability_topic);
         mqttClient.unsubscribe(state_topic_all);
         power_topics.forEach(topic => mqttClient.unsubscribe(topic));
@@ -329,8 +329,6 @@ async function handleSwitchPower(eventData: IMqttReceiveEvent<any>, deviceSettin
 
 
 async function handleDeviceOnlineOffline(eventData: IMqttReceiveEvent<any>, deviceSetting: TDeviceSetting) {
-    logger.info(`[handleDeviceOnlineOffline] here is LWT topic =================== ${JSON.stringify(eventData)}`);
-    logger.info(`[handleDeviceOnlineOffline] here is LWT topic =================== ${JSON.stringify(deviceSetting)}`);
     const deviceSettingList = getDeviceSettingList();
     const { mqttTopics: { availability_online }, mac } = deviceSetting;
     const online = eventData.data === availability_online;
@@ -350,7 +348,6 @@ async function handleDeviceOnlineOffline(eventData: IMqttReceiveEvent<any>, devi
             online
         }
     })
-
 
 
     // 将离线状态同步到iHost
