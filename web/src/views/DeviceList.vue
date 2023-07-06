@@ -73,9 +73,8 @@ import { useI18n } from 'vue-i18n';
 import { useEtcStore } from '@/stores/etc';
 import { useDeviceStore } from '@/stores/device';
 import { useSseStore } from '@/stores/sse';
-import type IDeviceInfo from '@/ts/interface/IDeviceInfo';
 import EDeviceCategory from '@/ts/enum/EDeviceCategory';
-import { autoSync, getAutoSync, getDevices, syncAll, syncSingle, unsyncSingle } from '@/api/apiService';
+import { autoSync, getAutoSync, syncAll, syncSingle, unsyncSingle } from '@/api/apiService';
 import { message } from 'ant-design-vue';
 import GetAccessTokenModalVue from '../components/GetAccessTokenModal.vue';
 import router from '@/router';
@@ -87,7 +86,6 @@ const deviceStore = useDeviceStore();
 const sseStore = useSseStore();
 
 // 图片资源
-const syncAllIcon = getAssetsFile('images/sync_all_device_icon.png');
 const settingsIcon = getAssetsFile('images/settings_icon.png');
 const unsupportedIcon = getAssetsFile('images/device/unknown_icon.png');
 const warningIcon = getAssetsFile('images/warning_icon.png');
@@ -310,34 +308,21 @@ const unsync = async (id: string) => {
     }
 };
 
-// 轮询 token 超过三分钟，取消上次操作的 loading状态
+// 轮询 token 超过三分钟，取消所有同步相关的 loading状态
 const queryTokenTimeUpHandler = () => {
     console.log('syncType:', syncType.value);
     console.log('syncId:', syncId.value);
-    switch (syncType.value) {
-        // 同步所有设备
-        case 'all':
-            syncAllDeviceLoading.value = false;
-            break;
-        // 同步单个设备
-        case 'sync':
-            setDeviceSyncLoading(syncId.value, false);
-            break;
-        // 取消同步单个设备
-        case 'unsync':
-            setDeviceSyncLoading(syncId.value, false);
-            break;
-        // 开关自动同步
-        case 'auto':
-            autoSyncSwitch.value = !autoSyncSwitch.value;
-            autoSyncLoading.value = false;
-            syncType.value = '';
-            break;
-        default:
-            console.log('syncType:', syncType.value);
-            break;
+    if (syncId.value) {
+        setDeviceSyncLoading(syncId.value, false);
+        syncId.value = '';
     }
-    message.error(t('ERROR[1701]'));
+    syncAllDeviceLoading.value = false;
+    if (autoSyncLoading.value) {
+        autoSyncSwitch.value = !autoSyncSwitch.value;
+        autoSyncLoading.value = false;
+    }
+    syncType.value = '';
+    message.error(t('GET_TOKEN_ERROR'));
     etcStore.setGetAccessTokenVisible(false);
     console.log(33333, etcStore.getAccessTokenVisible);
 };

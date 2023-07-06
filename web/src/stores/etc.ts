@@ -4,8 +4,6 @@ import i18n from '@/i18n';
 interface IEtcStoreState {
     language: 'zh-cn' | 'en-us';
     getAccessTokenVisible: boolean;
-    isSetMqtt: boolean;
-    isCheckHelper: boolean;
 }
 
 export const useEtcStore = defineStore('user', {
@@ -13,8 +11,6 @@ export const useEtcStore = defineStore('user', {
         return {
             language: 'zh-cn',
             getAccessTokenVisible: false,
-            isSetMqtt: false,
-            isCheckHelper: false,
         };
     },
     actions: {
@@ -24,12 +20,6 @@ export const useEtcStore = defineStore('user', {
         },
         setGetAccessTokenVisible(state: boolean) {
             this.getAccessTokenVisible = state;
-        },
-        updateIsSetMqtt(isSet: boolean) {
-            this.isSetMqtt = isSet;
-        },
-        updateIsCheckHelper(isCheck: boolean) {
-            this.isCheckHelper = isCheck;
         },
     },
     persist: true,

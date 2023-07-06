@@ -1,6 +1,6 @@
 import { createRouter, createWebHashHistory } from 'vue-router';
-import { useEtcStore } from '@/stores/etc';
 import ERouterName from '@/ts/enum/ERouterName';
+import { getMqtt } from '@/api/apiService';
 
 const DeviceList = () => import('@/views/DeviceList.vue');
 const MqttSettings = () => import('@/views/MqttSettings.vue');
@@ -31,11 +31,18 @@ const router = createRouter({
     ],
 });
 
-router.beforeEach((to, from, next) => {
-    // 设备列表页需先校验本地缓存状态 是否已配置过mqtt
+router.beforeEach(async (to, from, next) => {
+    // 设备列表页需先校验是否已配置过mqtt
     // 未配置过，需跳转到使用前提示页
-    if (to.name === ERouterName.DEVICE_LIST && !useEtcStore().isSetMqtt) {
-        next({ name: ERouterName.USER_HELPER });
+    if (to.name === ERouterName.DEVICE_LIST) {
+        const response = await getMqtt();
+        console.log('获取MQTT Broker配置结果：', response);
+        // 没有配置过
+        if (response.error === 1101) {
+            next({ name: ERouterName.USER_HELPER });
+        } else {
+            next();
+        }
     } else {
         next();
     }

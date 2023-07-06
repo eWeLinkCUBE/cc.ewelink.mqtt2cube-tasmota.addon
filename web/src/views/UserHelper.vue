@@ -46,7 +46,6 @@ const goDoc = () => {
 
 // 跳转 mqtt 配置页
 const goMqttSettings = () => {
-    etcStore.updateIsCheckHelper(true);
     router.push({ name: ERouterName.MQTT_SETTINGS });
 };
 </script>

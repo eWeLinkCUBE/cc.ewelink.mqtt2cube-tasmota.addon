@@ -149,17 +149,11 @@ const save = async () => {
     console.log('配置数据：', params);
     const isSuccess = await setMqttSettings(params);
     if (isSuccess) {
-        !etcStore.isSetMqtt && etcStore.updateIsSetMqtt(true);
         router.push({ name: ERouterName.DEVICE_LIST });
     }
 };
 
 onMounted(async () => {
-    // 校验本地缓存状态是否已配置过mqtt且已确认使用前提示，若没有则跳转使用前提示页
-    if (!etcStore.isSetMqtt && !etcStore.isCheckHelper) {
-        router.push({ name: ERouterName.USER_HELPER });
-        return;
-    }
     await getMqttSettings();
 });
 </script>
