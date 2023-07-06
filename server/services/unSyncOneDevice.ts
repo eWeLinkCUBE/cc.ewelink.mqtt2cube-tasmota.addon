@@ -4,6 +4,7 @@ import logger from '../log';
 import { deleteDevice, getIHostSyncDeviceList } from '../cube-api/api';
 import { getDeviceSettingList } from '../utils/tmp';
 import SSE from '../ts/class/sse';
+import ESseEvent from '../ts/enum/ESseEvent';
 
 
 /**
@@ -59,7 +60,7 @@ export default async function unSyncOneDevice(req: Request, res: Response) {
 
         const { name, mac, display_category, online } = deviceSetting;
         SSE.send({
-            name: "un_sync_report",
+            name: ESseEvent.UN_SYNC_REPORT,
             data: {
                 name,
                 id: mac,

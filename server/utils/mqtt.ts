@@ -12,6 +12,7 @@ import { getIHostSyncDeviceList, syncDeviceOnlineToIHost, syncDeviceStateToIHost
 import { checkTasmotaDeviceInIHost } from './device';
 import { IState, ISwitch } from '../ts/interface/ISwitch';
 import SSE from '../ts/class/sse';
+import ESseEvent from '../ts/enum/ESseEvent';
 
 const DEVICE_TYPE_TO_FUNC_MAPPING = {
     [EDeviceType.SWITCH]: handleSwitchMQTTMsg,
@@ -342,7 +343,7 @@ async function handleDeviceOnlineOffline(eventData: IMqttReceiveEvent<any>, devi
 
     // 发送SSE告知前端
     SSE.send({
-        name: 'device_online_status_report',
+        name: ESseEvent.DEVICE_ONLINE_STATUS_REPORT,
         data: {
             deviceId: mac,
             online

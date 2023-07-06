@@ -9,6 +9,7 @@ import config from '../config';
 import { ISyncDeviceToIHostReq, getIHostSyncDeviceList, syncDeviceToIHost } from '../cube-api/api';
 import { v4 as uuidv4 } from 'uuid';
 import { checkTasmotaDeviceInIHost } from '../utils/device';
+import ESseEvent from '../ts/enum/ESseEvent';
 
 
 
@@ -131,7 +132,7 @@ export default async function syncOneDevice(req: Request, res: Response) {
 
         const { mac } = deviceSetting;
         SSE.send({
-            name: "sync_success_report",
+            name: ESseEvent.SYNC_SUCCESS_REPORT,
             data: {
                 successList: [mac]
             }

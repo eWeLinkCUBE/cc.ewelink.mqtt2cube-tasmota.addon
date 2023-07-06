@@ -14,6 +14,7 @@ import db from './db';
 import { generateIHostDevice } from '../services/syncOneDevice';
 import SSE from '../ts/class/sse';
 import { getSwitchChannel } from './device';
+import ESseEvent from '../ts/enum/ESseEvent';
 
 
 /** relay与类型的映射 */
@@ -142,7 +143,7 @@ export async function initByDiscoveryMsg(eventData: IMqttReceiveEvent<IDiscovery
 
             // 发送SSE给前端
             SSE.send({
-                name: "new_device_report",
+                name: ESseEvent.NEW_DEVICE_REPORT,
                 data: {
                     name,
                     category: display_category,
@@ -161,7 +162,7 @@ export async function initByDiscoveryMsg(eventData: IMqttReceiveEvent<IDiscovery
             if(oldDeviceSetting.name !== newDeviceSetting.name) {
                 const { mac, name } = newDeviceSetting;
                 SSE.send({
-                    name: 'device_name_changed_report',
+                    name: ESseEvent.DEVICE_NAME_CHANGED_REPORT,
                     data: {
                         deviceId: mac,
                         name

@@ -7,6 +7,7 @@ import { IMqttParams, IMqttReceiveEvent } from '../interface/IMqtt';
 import { getMQTTConnected, updateMQTTConnected } from '../../utils/tmp';
 import SSE from './sse';
 import { allTasmotaDeviceOnOrOffline } from '../../utils/device';
+import ESseEvent from '../enum/ESseEvent';
 
 const MQTT_BROKER_KEEPALIVE = process.env.env === 'dev' ? 5 : 60;
 
@@ -82,7 +83,7 @@ class MQTT {
                 const mqttConnected = getMQTTConnected();
                 if (!mqttConnected) {
                     SSE.send({
-                        name: "mqtt_connected_report",
+                        name: ESseEvent.MQTT_CONNECTED_REPORT,
                         data: {}
                     })
                     updateMQTTConnected(true);
@@ -160,7 +161,7 @@ class MQTT {
 
     async #connectedMqtt() {
         SSE.send({
-            name: "mqtt_disconnect_report",
+            name: ESseEvent.MQTT_DISCONNECT_REPORT,
             data: {}
         })
         updateMQTTConnected(false);
