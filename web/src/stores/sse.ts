@@ -39,6 +39,18 @@ export const useSseStore = defineStore('sse', {
                 await useDeviceStore().getDeviceList();
             });
 
+            /** 设备名称更改 */
+            source.addEventListener('device_name_changed_report', async (event: any) => {
+                console.log('device_name_changed_report------------->', event.data);
+                await useDeviceStore().getDeviceList();
+            });
+
+            /** 设备上下线状态变更 */
+            source.addEventListener('device_online_status_report', async (event: any) => {
+                console.log('device_online_status_report------------->', event.data);
+                await useDeviceStore().getDeviceList();
+            });
+
             /** 设备成功同步 */
             source.addEventListener('sync_success_report', async (event: any) => {
                 console.log('sync_success_report------------->', event.data);
@@ -56,6 +68,8 @@ export const useSseStore = defineStore('sse', {
                 console.log('mqtt_disconnect_report------------->', event.data);
                 await useDeviceStore().updateIsMqttConnected(false);
             });
+
+
 
             /** SSE失败 */
             source.addEventListener('error', (event: any) => {
