@@ -107,7 +107,9 @@ function createFailRes(message_id: string) {
                 message_id,
                 version: '1',
             },
-            payload: {},
+            payload: {
+                type: "ENDPOINT_UNREACHABLE"
+            },
         },
     };
 }

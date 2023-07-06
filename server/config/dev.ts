@@ -4,7 +4,7 @@ export const devConf = {
         port: 8325,
         dataPath: '',
         dbPath: '',
-        name: 'Tasmota-Addon',
+        name: 'mqtt2cube-tasmota',
         version: '0.0.1',
     },
     auth: {
