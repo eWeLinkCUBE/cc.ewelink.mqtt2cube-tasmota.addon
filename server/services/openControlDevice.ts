@@ -3,7 +3,7 @@ import { Request, Response } from 'express';
 import { TAG_DATA_NAME } from '../const';
 import { IIHostControl } from '../ts/interface/IIHostControl';
 import { IState } from '../ts/interface/ISwitch';
-import { getDeviceSettingList } from '../utils/tmp';
+import { getDeviceSettingList, getMQTTConnected } from '../utils/tmp';
 import EDeviceType from '../ts/enum/EDeviceType';
 import { getMQTTClient } from '../ts/class/mqtt';
 import logger from '../log';
@@ -26,11 +26,18 @@ export default async function openControlDevice(req: Request, res: Response) {
     try {
         const iHostState = payload.state as IState;
         const mac = _.get(endpoint, ["tags", TAG_DATA_NAME, 'deviceId']);
+
+        const mqttConnected = getMQTTConnected();
+        if(!mqttConnected) {
+            logger.error(`[openControlDevice] mqtt is not connected`);
+            return res.json(createFailRes(message_id));
+        }
+
         const mqttClient = await getMQTTClient();
 
         if (!mqttClient) {
             logger.error(`[openControlDevice] mqtt client doesn't exist`);
-            return;
+            return res.json(createFailRes(message_id));
         }
 
         const deviceSettingList = getDeviceSettingList();

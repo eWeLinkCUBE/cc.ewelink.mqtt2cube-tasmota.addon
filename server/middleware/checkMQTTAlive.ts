@@ -21,10 +21,12 @@ export async function checkMQTTAlive(req: Request, res: Response, next: NextFunc
     const mqttApi = url.includes('/api/v1/mqtt');
     // 判断是否为sse相关接口
     const sseApi = url.includes('/api/v1/sse');
+    // 判断是否为开放接口
+    const openApi = url.includes('/api/v1/open/device');
     // mqtt是否连接中
     const mqttConnected = getMQTTConnected();
 
-    if (!mqttApi && !sseApi && !mqttConnected) {
+    if (!mqttApi && !sseApi && !mqttConnected && !openApi) {
         logger.info(`[middleware] mqtt is not connected`);
         return res.json(toResponse(603));
     }
