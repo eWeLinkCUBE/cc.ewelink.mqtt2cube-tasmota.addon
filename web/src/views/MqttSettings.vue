@@ -142,7 +142,7 @@ const save = async () => {
                 params[option.key] = option.value.trim() ? encryptAES(option.value.trim(), APP_SECRET) : '';
                 break;
             default:
-                params[option.key] = option.value.trim();
+                params[option.key] = option.value.trim().split(/\s+/).join('')
                 break;
         }
     }
