@@ -46,6 +46,7 @@ export default async function getDeviceList(req: Request, res: Response) {
         }
 
         const deviceSettingList = getDeviceSettingList();
+        logger.info(`[getDeviceList] deviceSettingList => ${JSON.stringify(deviceSettingList)}`)
         const deviceInfoList: IDeviceInfo[] = [];
         for (const deviceSetting of deviceSettingList) {
             const { name, display_category, mac, online } = deviceSetting;

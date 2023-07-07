@@ -4,7 +4,7 @@ import logger from '../../log';
 import mqttUtils from '../../utils/mqtt';
 import mqtt, { IClientOptions, IPublishPacket, IClientSubscribeOptions } from 'mqtt';
 import { IMqttParams, IMqttReceiveEvent } from '../interface/IMqtt';
-import { getMQTTConnected, updateMQTTConnected } from '../../utils/tmp';
+import { getDeviceSettingList, getMQTTConnected, updateDeviceSettingList, updateMQTTConnected } from '../../utils/tmp';
 import SSE from './sse';
 import { allTasmotaDeviceOnOrOffline } from '../../utils/device';
 import ESseEvent from '../enum/ESseEvent';
@@ -106,11 +106,14 @@ class MQTT {
 
             this.client.on('close', async () => {
                 logger.error(`[mqtt] ===================mqtt close===================`);
+                // 清空所有旧缓存
+                updateDeviceSettingList([]);
+                logger.info(`[mqtt] clear all cache ${JSON.stringify(getDeviceSettingList())}`);
+
                 const mqttConnected = getMQTTConnected();
                 if (mqttConnected) {
                     await this.#connectedMqtt();
                 }
-
 
 
                 if (hasInit) {
@@ -132,6 +135,10 @@ class MQTT {
 
             this.client.on('error', async (err) => {
                 logger.error(`[mqtt] ===================mqtt error=================== ${err.message} ${hasInit}`);
+                // 清空所有旧缓存
+                updateDeviceSettingList([]);
+                logger.info(`[mqtt] clear all cache ${JSON.stringify(getDeviceSettingList())}`);
+                
                 const mqttConnected = getMQTTConnected();
                 if (mqttConnected) {
                     await this.#connectedMqtt();

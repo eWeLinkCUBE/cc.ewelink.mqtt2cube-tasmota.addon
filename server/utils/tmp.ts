@@ -1,3 +1,4 @@
+import logger from "../log";
 import { INotSupport } from "../ts/interface/INotSupport";
 import { ISwitch } from "../ts/interface/ISwitch";
 
@@ -14,8 +15,8 @@ let mqttConnected: boolean = false;
  * @description 更新设备配置列表
  * @param {TDeviceSettingList} deviceSettingList
  */
-export function updateDeviceSettingList(deviceSettingList: TDeviceSettingList) {
-    deviceSettingList = deviceSettingList;
+export function updateDeviceSettingList(newSettingList: TDeviceSettingList) {
+    deviceSettingList = newSettingList;
 }
 
 

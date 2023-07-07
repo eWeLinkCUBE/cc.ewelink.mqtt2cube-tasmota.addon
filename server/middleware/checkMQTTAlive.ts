@@ -1,6 +1,5 @@
 import _ from 'lodash';
 import { Request, Response, NextFunction } from 'express';
-import DB from '../utils/db';
 import { toResponse } from '../utils/error';
 import logger from '../log';
 import { getMQTTConnected } from '../utils/tmp';
@@ -27,7 +26,7 @@ export async function checkMQTTAlive(req: Request, res: Response, next: NextFunc
     const mqttConnected = getMQTTConnected();
 
     if (!mqttApi && !sseApi && !mqttConnected && !openApi) {
-        logger.info(`[middleware] mqtt is not connected`);
+        logger.info(`[checkMQTTAlive middleware] mqtt is not connected`);
         return res.json(toResponse(603));
     }
 
