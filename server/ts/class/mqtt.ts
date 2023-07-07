@@ -11,18 +11,6 @@ import ESseEvent from '../enum/ESseEvent';
 
 const MQTT_BROKER_KEEPALIVE = process.env.env === 'dev' ? 5 : 60;
 
-const connectOption: IClientOptions = {
-    clientId: '',
-    keepalive: MQTT_BROKER_KEEPALIVE,
-    clean: true,
-    protocolId: 'MQTT',
-    protocolVersion: 5,
-    reconnectPeriod: 1000,
-    connectTimeout: 30 * 1000,
-    properties: {
-        sessionExpiryInterval: 0
-    }
-};
 
 /**
  * @description MQTT初始化及管理方法
@@ -57,17 +45,28 @@ class MQTT {
     async connect() {
         const { username = "", pwd = "", host, port } = this.initParams
         const mqttUrl = `mqtt://${host}:${port}`;
-        logger.error(`[mqtt] Connecting to MQTT server at ${mqttUrl}`);
+        logger.error(`[mqtt] Connecting to MQTT server at ${mqttUrl}, ${JSON.stringify(this.initParams)}`);
         let hasInit = false;
 
         return new Promise((resolve, reject) => {
-            // 每次连接都生成新的clientID，避免多次连接后clientId冲突
-            connectOption.clientId = uuid();
+            const connectOption: IClientOptions = {
+                clientId: uuid(),
+                keepalive: MQTT_BROKER_KEEPALIVE,
+                clean: true,
+                protocolId: 'MQTT',
+                protocolVersion: 5,
+                reconnectPeriod: 1000,
+                connectTimeout: 30 * 1000,
+                properties: {
+                    sessionExpiryInterval: 0
+                }
+            };
 
             if (username && pwd) {
                 connectOption.username = username;
                 connectOption.password = pwd;
             }
+
             logger.error(`[mqtt] connect option => ${JSON.stringify(connectOption)}`)
 
             this.client = mqtt.connect(mqttUrl, connectOption);
@@ -335,6 +334,7 @@ export async function initMqtt(initParams: IMqttParams, failAndDisconnect = fals
             logger.info(`[initMqtt] mqtt already exist. close it`);
             mqttClient.disconnect();
         }
+        logger.info(`[initMqtt] init params => ${JSON.stringify(initParams)}`);
         const newMqttClient = new MQTT(initParams);
         const res = await newMqttClient.connect();
         logger.error(`[initMqtt] init mqtt result => ${res}`);
