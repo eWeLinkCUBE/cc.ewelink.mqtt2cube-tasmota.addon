@@ -27,6 +27,7 @@ import { APP_SECRET } from '@/config';
 import router from '@/router';
 import { useEtcStore } from '@/stores/etc';
 import ERouterName from '@/ts/enum/ERouterName';
+import { useDeviceStore } from '@/stores/device';
 
 interface IOption {
     label: string;
@@ -150,6 +151,7 @@ const save = async () => {
     const isSuccess = await setMqttSettings(params);
     if (isSuccess) {
         router.push({ name: ERouterName.DEVICE_LIST });
+        useDeviceStore().updateIsMqttConnected(true);
     }
 };
 
