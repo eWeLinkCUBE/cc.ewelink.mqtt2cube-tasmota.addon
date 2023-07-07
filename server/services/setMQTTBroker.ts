@@ -26,12 +26,14 @@ export default async function setMQTTBroker(req: Request, res: Response) {
         const initRes = await initMqtt({ username, pwd: decryptedPwd, host, port }, true);
         logger.debug(`[setMQTTBroker] init result => ${initRes}`)
 
+        // 更新mqtt配置
+        await db.setDbValue('mqttSetting', { username, pwd: decryptedPwd, host, port });
+
         if (!initRes) {
             logger.error(`[setMQTTBroker] mqtt setting is wrong ${JSON.stringify({ username, pwd, host, port })}`)
             return res.json(toResponse(1001));
         }
 
-        await db.setDbValue('mqttSetting', { username, pwd: decryptedPwd, host, port });
 
         return res.json(toResponse(0));
     } catch (error: any) {
