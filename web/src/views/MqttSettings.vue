@@ -147,7 +147,7 @@ const save = async () => {
                 params[option.key] = option.value.trim() ? encryptAES(option.value.trim(), APP_SECRET) : '';
                 break;
             default:
-                params[option.key] = option.value.trim();
+                params[option.key] = option.value.trim().split(/\s+/).join('')
                 break;
         }
     }
@@ -175,6 +175,7 @@ onMounted(async () => {
     display: flex;
     flex-direction: column;
     position: relative;
+    overflow: hidden scroll;
     .header {
         width: 100vw;
         height: 80px;
@@ -190,6 +191,7 @@ onMounted(async () => {
             width: 24px;
             height: 24px;
             cursor: pointer;
+            margin-right: 20px;
         }
     }
     .body {
@@ -250,6 +252,28 @@ onMounted(async () => {
                 color: white;
             }
         }
+    }
+    // 滚动条和滑块
+    &::-webkit-scrollbar,
+    &::-webkit-scrollbar-thumb {
+        width: 8px;
+        height: 8px;
+        border-radius: 10px;
+    }
+    // 滑块背景色
+    &::-webkit-scrollbar-thumb {
+        background: #d8d8d8;
+        &:hover {
+            background: #bcbcbc;
+        }
+    }
+    // 其余相关样式设置成跟滑块一个背景色
+    ::-webkit-scrollbar,
+    ::-webkit-scrollbar-corner,
+    ::-webkit-resizer,
+    ::-webkit-scrollbar-track,
+    ::-webkit-scrollbar-track-piece {
+        background: transparent;
     }
 }
 </style>
