@@ -2,7 +2,7 @@
     <div id="mqtt-settings-page">
         <div class="header">
             <span class="title">{{ t('SETTINGS_HEADER_TITLE') }}</span>
-            <img :src="deviceListIcon" alt="" class="go-device-list-icon" @click="goHome" v-if="showIcon">
+            <img :src="deviceListIcon" alt="" class="go-device-list-icon" @click="goHome" v-if="showIcon" />
         </div>
         <div class="body">
             <span class="title">{{ t('SETTINGS_BODY_TITLE') }}</span>
@@ -29,7 +29,7 @@ import router from '@/router';
 import { useEtcStore } from '@/stores/etc';
 import ERouterName from '@/ts/enum/ERouterName';
 import { useDeviceStore } from '@/stores/device';
-import deviceListIcon from '@/assets/images/device_list_icon.png'
+import deviceListIcon from '@/assets/images/device_list_icon.png';
 
 interface IOption {
     label: string;
@@ -93,7 +93,7 @@ const getMqttSettings = async () => {
         const response = await getMqtt();
         console.log('获取MQTT Broker配置结果：', response);
         if (response.error !== 0) {
-            if (response.error  === 1101) {
+            if (response.error === 1101) {
                 showIcon.value = false;
             }
             return;
@@ -164,7 +164,7 @@ const save = async () => {
 // 回到设备列表页
 const goHome = () => {
     router.push({ name: ERouterName.DEVICE_LIST });
-}
+};
 
 onMounted(async () => {
     await getMqttSettings();

@@ -48,7 +48,7 @@ const goDoc = () => {
 const goMqttSettings = () => {
     router.push({ name: ERouterName.MQTT_SETTINGS });
 };
-</script>
+</script>D
 
 <style scoped lang="scss">
 #user-helper-page {

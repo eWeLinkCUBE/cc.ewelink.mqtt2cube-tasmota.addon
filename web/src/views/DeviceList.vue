@@ -355,21 +355,6 @@ const setDeviceSyncLoading = (id: string, show: boolean) => {
 };
 
 onMounted(async () => {
-    // 语言跟随浏览器
-    // const browserLanguage = navigator.language;
-    let browserLanguage = window.location.search;
-
-    if (!browserLanguage) {
-        browserLanguage = navigator.language;
-    }
-
-    if (browserLanguage.includes('zh')) {
-        // etcStore.languageChange('en-us');
-        etcStore.languageChange('zh-cn');
-    } else {
-        etcStore.languageChange('en-us');
-    }
-    console.log(etcStore.language, '当前语言');
     // 初始化弹窗组件显示状态
     if (etcStore.getAccessTokenVisible) {
         etcStore.setGetAccessTokenVisible(false);

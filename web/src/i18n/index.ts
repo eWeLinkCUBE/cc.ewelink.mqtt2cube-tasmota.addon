@@ -12,14 +12,18 @@ const messages = {
 
 function getLocale() {
     const etc = secureLS.get('etc');
+    console.log('etc============', etc);
     if (etc) {
         const etcStore = JSON.parse(etc);
+        console.log('etcStore=============', etcStore);
         if (!_.isEmpty(etcStore)) {
             return etcStore.language;
         }
     }
     return navigator.language.toLowerCase() === ELanguage.CHINA ? ELanguage.CHINA : ELanguage.ENGLISH;
 }
+
+console.log('getLocale============', getLocale());
 const i18n = createI18n({
     legacy: false,
     locale: getLocale(),
