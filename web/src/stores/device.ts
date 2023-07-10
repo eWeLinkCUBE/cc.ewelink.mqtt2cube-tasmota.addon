@@ -31,6 +31,7 @@ export const useDeviceStore = defineStore('device', {
                     return;
                 }
                 this.updateDeviceList(response.data.map((item) => ({ ...item, syncing: false })));
+                this.updateIsMqttConnected(true);
             } catch (error) {
                 console.log('获取设备列表出错：', error);
             }
