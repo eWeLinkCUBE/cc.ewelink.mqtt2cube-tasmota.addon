@@ -112,11 +112,9 @@ const toggleAutoSync = async (isOn: boolean) => {
         autoSyncLoading.value = true;
         syncType.value = 'auto';
         const response = await autoSync({ autoSync: isOn });
-        console.log('开关新增设备自动同步结果：', response);
         if (response.error !== 0) {
             // 缺少token凭证
             if (response.error === 602) {
-                console.log(22222, etcStore.getAccessTokenVisible);
                 etcStore.setGetAccessTokenVisible(true);
                 return;
             }
@@ -143,8 +141,8 @@ const getAutoSyncStatus = async () => {
     try {
         autoSyncLoading.value = true;
         const response = await getAutoSync();
-        console.log('获取设备自动同步开关状态结果：', response);
         if (response.error !== 0) {
+            console.log('获取设备自动同步开关状态错误：', response);
             if (response.error === 603) {
                 deviceStore.updateIsMqttConnected(false);
             }
@@ -166,8 +164,8 @@ const syncAllDevice = async () => {
         syncAllDeviceLoading.value = true;
         syncType.value = 'all';
         const response = await syncAll();
-        console.log('同步所有设备结果：', response);
         if (response.error !== 0) {
+            console.log('同步所有设备错误', response);
             // 缺少token凭证
             if (response.error === 602) {
                 etcStore.setGetAccessTokenVisible(true);
@@ -310,8 +308,6 @@ const unsync = async (id: string) => {
 
 // 轮询 token 超过三分钟，取消所有同步相关的 loading状态
 const queryTokenTimeUpHandler = () => {
-    console.log('syncType:', syncType.value);
-    console.log('syncId:', syncId.value);
     if (syncId.value) {
         setDeviceSyncLoading(syncId.value, false);
         syncId.value = '';
@@ -324,12 +320,10 @@ const queryTokenTimeUpHandler = () => {
     syncType.value = '';
     message.error(t('GET_TOKEN_ERROR'));
     etcStore.setGetAccessTokenVisible(false);
-    console.log(33333, etcStore.getAccessTokenVisible);
 };
 
 // 外页弹窗点击取消回调
 const cancelGetTokenHandler = () => {
-    console.log('外页关闭获取token弹窗');
     etcStore.setGetAccessTokenVisible(false);
     // 取消loading状态与上一次执行操作数据
     // 操作类型

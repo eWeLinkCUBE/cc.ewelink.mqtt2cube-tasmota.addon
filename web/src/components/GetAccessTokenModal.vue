@@ -76,7 +76,6 @@ watch(
     () => props.getAccessTokenVisible,
     (newValue) => {
         if (newValue) {
-            console.log(11111);
             getIhostAccessToken();
         } else {
             if (getAccessTokenTimer.value > 0) {
@@ -89,7 +88,7 @@ watch(
     () => getAccessTokenNumber.value,
     (newValue) => {
         if (newValue >= 18) {
-            console.log('轮询超过三分钟');
+            console.log('over three minutes');
             clearInterval(getAccessTokenTimer.value);
             getAccessTokenNumber.value = 0;
             if (isIframe.value) {
@@ -108,7 +107,6 @@ const finish = async () => {
             return;
         }
         if (response.error === 0) {
-            console.log('完成了');
             emits('getTokenSuccess');
         }
     } catch (error) {

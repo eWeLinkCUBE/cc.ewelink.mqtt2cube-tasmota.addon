@@ -36,7 +36,6 @@ router.beforeEach(async (to, from, next) => {
     // 未配置过，需跳转到使用前提示页
     if (to.name === ERouterName.DEVICE_LIST) {
         const response = await getMqtt();
-        console.log('获取MQTT Broker配置结果：', response);
         // 没有配置过
         if (response.error === 1101) {
             next({ name: ERouterName.USER_HELPER });

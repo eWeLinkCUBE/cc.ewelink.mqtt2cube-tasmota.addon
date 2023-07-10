@@ -14,7 +14,6 @@ export const useEtcStore = defineStore('user', {
     },
     actions: {
         languageChange(lang) {
-            console.log('languageChange', lang);
             this.language = lang;
             i18n.global.locale.value = lang;
         },

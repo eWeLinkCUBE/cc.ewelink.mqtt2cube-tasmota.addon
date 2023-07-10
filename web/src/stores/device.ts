@@ -24,7 +24,6 @@ export const useDeviceStore = defineStore('device', {
         async getDeviceList() {
             try {
                 const response = await api.getDevices();
-                console.log('获取设备列表结果：', response);
                 if (response.error !== 0) {
                     if (response.error === 603) {
                         this.updateIsMqttConnected(false);

@@ -91,7 +91,6 @@ const options = ref<IOption[]>([
 const getMqttSettings = async () => {
     try {
         const response = await getMqtt();
-        console.log('获取MQTT Broker配置结果：', response);
         if (response.error !== 0) {
             if (response.error === 1101) {
                 showIcon.value = false;
@@ -130,7 +129,6 @@ const setMqttSettings = async (params: IBroker) => {
 // 保存
 const save = async () => {
     const params: IBroker = {} as IBroker;
-    console.log('options.value', options.value);
     for (let option of options.value) {
         if ((option.key === 'host' || option.key === 'port') && !option.value.trim()) {
             return message.warning(t('SETTINGS_SAVE_VALIDATE_LACK'));
@@ -153,7 +151,6 @@ const save = async () => {
                 break;
         }
     }
-    console.log('配置数据：', params);
     const isSuccess = await setMqttSettings(params);
     if (isSuccess) {
         router.push({ name: ERouterName.DEVICE_LIST });

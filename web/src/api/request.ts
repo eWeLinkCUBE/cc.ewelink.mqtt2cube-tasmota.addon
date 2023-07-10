@@ -101,7 +101,7 @@ async function _httpRequest<T>(api: string, params: any, httpMethod: EHttpMethod
             error: 500,
             data: null,
         };
-        console.log('Turbo ~ file: request.ts:110 ~ response:', response);
+        console.log('request error', error);
         return response;
     }
 }
