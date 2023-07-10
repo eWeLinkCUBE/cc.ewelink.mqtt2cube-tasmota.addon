@@ -6,6 +6,6 @@ export default async function sse(req: Request, res: Response) {
     try {
         ownSse.buildStreamContext(req, res);
     } catch (err) {
-        logger.info("build sse connection error: ", err);
+        logger.info("[sse] build sse connection error: ", err);
     }
 }

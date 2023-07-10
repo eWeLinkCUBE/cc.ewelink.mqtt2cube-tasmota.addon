@@ -92,7 +92,6 @@ function getSwitchSetting(discovery: IDiscoveryMsg): ISwitch {
         channelNum++;
     }
 
-    logger.info(`[getSwitchSetting] cur device ${mac}'s channel number is ${channelNum}`);
 
     // 生成多通道的能力与状态
     if (channelNum > 1) {
@@ -142,8 +141,6 @@ function getSwitchSetting(discovery: IDiscoveryMsg): ISwitch {
             }
 
             power_topics.push(`${topicState}POWER${curChannel}`);
-
-            logger.info(`[getSwitchSetting] current ${curChannel} state is ${JSON.stringify(state)}`)
         }
     } else {
         power_topics.push(`${topicState}POWER`);

@@ -19,7 +19,6 @@ import { getSwitchChannel } from '../utils/device';
  */
 export default async function openControlDevice(req: Request, res: Response) {
     const reqData = req.body as unknown as IIHostControl;
-    logger.info(`[openControlDevice] I'm in openControlDevice now ${JSON.stringify(reqData)}`)
     const { header, endpoint, payload } = reqData.directive;
     const { message_id } = header;
 
@@ -45,7 +44,6 @@ export default async function openControlDevice(req: Request, res: Response) {
             // 对开关设备进行处理
             if (deviceSetting.mac === mac && deviceSetting.display_category === EDeviceType.SWITCH) {
                 const channelLength = getSwitchChannel(deviceSetting);
-                logger.info(`[openControlDevice] channelLength => ${channelLength}`);
                 const { mqttTopics } = deviceSetting;
                 // 单通道设备
                 if (channelLength === 1) {

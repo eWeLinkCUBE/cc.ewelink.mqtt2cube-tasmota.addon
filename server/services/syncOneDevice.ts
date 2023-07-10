@@ -102,14 +102,12 @@ export default async function syncOneDevice(req: Request, res: Response) {
         const deviceList = result.data!.device_list;
 
         if (checkTasmotaDeviceInIHost(deviceList, userMac)) {
-            logger.info(`[syncOneDevice] device ${userMac} is already exist in iHost`);
             return res.json(toResponse(0));
         }
 
         // 生成请求参数
         const params = generateIHostDevice([deviceSetting]);
         logger.info(`[syncDevice] sync device to iHost params ${JSON.stringify(params)}`);
-        logger.info(`[syncDevice] sync device to iHost deviceSetting ${JSON.stringify(deviceSetting)}`);
 
         // 开始同步
         const syncRes = await syncDeviceToIHost(params);

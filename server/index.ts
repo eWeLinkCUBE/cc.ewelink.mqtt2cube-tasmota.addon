@@ -55,13 +55,12 @@ app.use(notFound);
 app.use(internalError);
 
 app.listen(port, '0.0.0.0', async () => {
-    logger.info(`Server is running at http://localhost:${port}----env: ${config.nodeApp.env}----version: v${config.nodeApp.version}`);
+    logger.info(`Server is running at [port: ${port}----env: ${config.nodeApp.env}----version: v${config.nodeApp.version}`);
 
     // 初始化数据库
     await initDb(dbPath, isDbFileExist);
     const mqttSetting = await db.getDbValue('mqttSetting');
     if (mqttSetting) {
-        logger.info(`begin init mqtt`);
         await initMqtt(mqttSetting);
     }
 

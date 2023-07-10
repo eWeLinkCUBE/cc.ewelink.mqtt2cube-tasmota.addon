@@ -57,7 +57,6 @@ async function handleMQTTReceiveMsg(eventData: IMqttReceiveEvent<any>) {
         // 根据对应的设备类别调用对应的处理方法
         const deviceSettingList = getDeviceSettingList();
         for (const deviceSetting of deviceSettingList) {
-            logger.error(`[handleMQTTReceiveMsg] current device setting name  => ${deviceSetting.name} current topic => ${eventData.topic}`);
             const func = _.get(DEVICE_TYPE_TO_FUNC_MAPPING, deviceSetting.display_category);
             if (!func) return;
             await func(eventData, deviceSetting);
@@ -75,7 +74,7 @@ async function handleMQTTReceiveMsg(eventData: IMqttReceiveEvent<any>) {
  * @returns {*} 
  */
 async function handleSwitchMQTTMsg(eventData: IMqttReceiveEvent<any>, deviceSetting: TDeviceSetting): Promise<void> {
-    logger.info(`[handleSwitchMQTTMsg] handling switch ${JSON.stringify(eventData)}, deviceSetting => ${JSON.stringify(deviceSetting)}`);
+    logger.info(`[handleSwitchMQTTMsg] handling switch ${JSON.stringify(eventData)}`);
     if (deviceSetting.display_category !== EDeviceType.SWITCH) return;
     const { topic } = eventData;
     const { mqttTopics: { state_topic, result_topic, availability_topic, power_topics, state_topic_all }, so } = deviceSetting;
@@ -83,30 +82,25 @@ async function handleSwitchMQTTMsg(eventData: IMqttReceiveEvent<any>, deviceSett
 
     // 处理在线离线
     if (topic.toLowerCase() === availability_topic.toLowerCase()) {
-        logger.info(`[handleSwitchMQTTMsg] handling offline message => ${topic}  ${availability_topic}`);
         await handleDeviceOnlineOffline(eventData, deviceSetting);
         return;
     }
 
     // 处理setOption变化事件
     const isSetOptionChanged = topic.toLowerCase().includes('setoption');
-    logger.info(`[handleSwitchMQTTMsg] isSetOptionChanged => ${topic} ${isSetOptionChanged}`);
 
     // 如果topic已经包含SetOption代表setOption4已开但缓存未更新/setOption4需要特殊处理
     if (isSetOptionChanged || so["4"] === 1) {
         logger.info(`[handleSwitchMQTTMsg] handle setOption 4`)
         // 处理power事件
         const powerOrStateTopic = power_topics.includes(topic) || `${state_topic_all}STATE` === topic;
-        logger.info(`[handleSwitchMQTTMsg] powerOrStateTopic => ${powerOrStateTopic}`);
         if (powerOrStateTopic) {
-            logger.info(`[handleSwitchMQTTMsg] handle setOption4's switch power`);
             await handleSwitchPower(eventData, deviceSetting);
             return;
         }
 
 
         if (isSetOptionChanged) {
-            logger.info(`[handleSwitchMQTTMsg] handle setOption change`);
             handleSetOptionChange(eventData, deviceSetting);
             return;
         }
@@ -120,17 +114,13 @@ async function handleSwitchMQTTMsg(eventData: IMqttReceiveEvent<any>, deviceSett
 
         // 处理POWER事件
         const isPowerTopic = isCertainTopic(eventData.data, 'power');
-        logger.info(`[handleSwitchMQTTMsg] isPowerTopic ${isPowerTopic}`);
         if (isPowerTopic) {
-            logger.info(`[handleSwitchMQTTMsg] handle switch power`);
             await handleSwitchPower(eventData, deviceSetting);
         }
 
         // 处理setOption变化事件
         const isSetOptionChanged = isCertainTopic(eventData.data, 'setOption');
-        logger.info(`[handleSwitchMQTTMsg] isSetOptionChanged ${isSetOptionChanged}`);
         if (isSetOptionChanged) {
-            logger.info(`[handleSwitchMQTTMsg] handle setOption change`);
             handleSetOptionChange(eventData, deviceSetting);
         }
 
@@ -236,6 +226,7 @@ async function unsubscribeAllTopic(deviceSetting: TDeviceSetting): Promise<void>
 
 
 async function handleSwitchPower(eventData: IMqttReceiveEvent<any>, deviceSetting: ISwitch) {
+    logger.info(`[handleSwitchMQTTMsg] handle switch power`);
     const { mqttTopics: { state_power_on, state_power_off }, capabilities } = deviceSetting;
     const toggleCount = capabilities.filter(capability => capability.capability === 'toggle').length;
     const channelLength = toggleCount === 0 ? 1 : toggleCount;
@@ -284,8 +275,6 @@ async function handleSwitchPower(eventData: IMqttReceiveEvent<any>, deviceSettin
         }
     }
 
-    logger.info(`[handleSwitchPower] ${JSON.stringify(state, null, 2)}`);
-
     // 对不上的设备无需继续操作
     if (_.isEmpty(state)) return;
 
@@ -293,7 +282,6 @@ async function handleSwitchPower(eventData: IMqttReceiveEvent<any>, deviceSettin
     const deviceSettingList = getDeviceSettingList();
     const curIdx = deviceSettingList.findIndex(curDeviceSetting => curDeviceSetting.mac === deviceSetting.mac);
     deviceSettingList[curIdx] = deviceSetting;
-    logger.info(`[handleSwitchPower] after update device setting => ${JSON.stringify(deviceSetting)}`);
     updateDeviceSettingList(deviceSettingList);
 
     // 3. 同步到iHost
@@ -322,7 +310,6 @@ async function handleSwitchPower(eventData: IMqttReceiveEvent<any>, deviceSettin
                 },
             },
         }
-        logger.info(`[handleSwitchPower] device state sync to iHost params ${JSON.stringify(params)}`);
         const syncRes = await syncDeviceStateToIHost(params);
         logger.info(`[handleSwitchPower] device state sync to iHost result ${JSON.stringify(syncRes)}`);
     }
@@ -330,6 +317,7 @@ async function handleSwitchPower(eventData: IMqttReceiveEvent<any>, deviceSettin
 
 
 async function handleDeviceOnlineOffline(eventData: IMqttReceiveEvent<any>, deviceSetting: TDeviceSetting) {
+    logger.info(`[handleSwitchMQTTMsg] handling offline message: ${eventData.topic}`);
     const deviceSettingList = getDeviceSettingList();
     const { mqttTopics: { availability_online }, mac } = deviceSetting;
     const online = eventData.data === availability_online;
@@ -338,7 +326,6 @@ async function handleDeviceOnlineOffline(eventData: IMqttReceiveEvent<any>, devi
     // 更新到缓存中
     const curIdx = deviceSettingList.findIndex(curDeviceSetting => curDeviceSetting.mac === deviceSetting.mac);
     deviceSettingList[curIdx] = deviceSetting;
-    logger.info(`[handleSwitchMQTTMsg] after update device setting => ${JSON.stringify(deviceSetting)}`);
     updateDeviceSettingList(deviceSettingList);
 
     // 发送SSE告知前端
@@ -377,7 +364,6 @@ async function handleDeviceOnlineOffline(eventData: IMqttReceiveEvent<any>, devi
                 },
             },
         }
-        logger.info(`[handleSwitchMQTTMsg] device online sync to iHost params ${JSON.stringify(params)}`);
         const syncRes = await syncDeviceOnlineToIHost(params);
         logger.info(`[handleSwitchMQTTMsg] device online sync to iHost result ${JSON.stringify(syncRes)}`);
     }
@@ -394,6 +380,7 @@ async function handleDeviceOnlineOffline(eventData: IMqttReceiveEvent<any>, devi
  * @returns {*} 
  */
 function handleSetOptionChange(eventData: IMqttReceiveEvent<any>, deviceSetting: TDeviceSetting) {
+    logger.info(`[handleSetOptionChange] handle setOption change`);
     const { data } = eventData;
     const { so } = deviceSetting as INotSupport;
     const setOptionKey = Object.keys(data)[0];
@@ -404,14 +391,12 @@ function handleSetOptionChange(eventData: IMqttReceiveEvent<any>, deviceSetting:
         }
     }
 
-    logger.info(`[handleSetOptionChange] after set option changed => ${JSON.stringify(so)}`);
 
     deviceSetting.so = so;
 
     const deviceSettingList = getDeviceSettingList();
     const curIdx = deviceSettingList.findIndex(curDeviceSetting => curDeviceSetting.mac === deviceSetting.mac);
     deviceSettingList[curIdx] = deviceSetting;
-    logger.info(`[handleSetOptionChange] after update device setting => ${JSON.stringify(deviceSetting)}`);
     updateDeviceSettingList(deviceSettingList);
 }
 

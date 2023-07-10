@@ -46,7 +46,6 @@ export default async function getDeviceList(req: Request, res: Response) {
         }
 
         const deviceSettingList = getDeviceSettingList();
-        logger.info(`[getDeviceList] deviceSettingList => ${JSON.stringify(deviceSettingList)}`)
         const deviceInfoList: IDeviceInfo[] = [];
         for (const deviceSetting of deviceSettingList) {
             const { name, display_category, mac, online } = deviceSetting;
@@ -58,8 +57,6 @@ export default async function getDeviceList(req: Request, res: Response) {
                 synced: checkTasmotaDeviceInIHost(deviceList, mac)
             })
         }
-
-        logger.info(`[getDeviceList] final device info list => ${JSON.stringify(deviceInfoList)}`);
 
         return res.json(toResponse(0, 'success', deviceInfoList));
     } catch (error: any) {

@@ -108,7 +108,6 @@ class MQTT {
                 logger.error(`[mqtt] ===================mqtt close===================`);
                 // 清空所有旧缓存
                 updateDeviceSettingList([]);
-                logger.info(`[mqtt] clear all cache ${JSON.stringify(getDeviceSettingList())}`);
 
                 const mqttConnected = getMQTTConnected();
                 if (mqttConnected) {
@@ -260,9 +259,8 @@ class MQTT {
     subscribe(topic: string, opt?: IClientSubscribeOptions) {
         if (!topic) return;
         logger.info(`[mqtt] ===========================subscribe topic ${topic}===========================`)
-        logger.info(`[mqtt] subscribe topic ${topic} ${opt ? 'with option' + opt : ''}`)
         opt = opt ? Object.assign({}, { qos: 2, rap: true }, opt) : { qos: 2, rap: true };
-        logger.info(`[mqtt] subscribe topic option ${JSON.stringify(opt)}`)
+        logger.info(`[mqtt] subscribe topic ${topic} ${opt ? 'with option' + opt : ''}`)
         this.client!.subscribe(topic, opt);
     }
 
@@ -304,7 +302,7 @@ class MQTT {
             sendPayload = JSON.stringify(payload);
         };
 
-        logger.info(`publish topic==========> `, topic, sendPayload, actualOptions);
+        logger.info(`[mqtt] ===========================publish topic ${topic}===========================`, topic, sendPayload, actualOptions);
 
         return new Promise((resolve, reject) => {
             this.client!.publish(
@@ -341,7 +339,6 @@ export async function initMqtt(initParams: IMqttParams, failAndDisconnect = fals
             logger.info(`[initMqtt] mqtt already exist. close it`);
             mqttClient.disconnect();
         }
-        logger.info(`[initMqtt] init params => ${JSON.stringify(initParams)}`);
         const newMqttClient = new MQTT(initParams);
         const res = await newMqttClient.connect();
         logger.error(`[initMqtt] init mqtt result => ${res}`);
@@ -372,7 +369,7 @@ export async function getMQTTClient(): Promise<MQTT | null> {
         return mqttClient;
     }
 
-    logger.info(`[getMQTTClient] mqttClient not exist!!!`)
+    logger.info(`[getMQTTClient] mqttClient not exist`)
     const mqttSetting = await db.getDbValue('mqttSetting');
     if (mqttSetting) {
         const initRes = await initMqtt(mqttSetting);

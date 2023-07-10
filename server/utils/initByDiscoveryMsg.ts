@@ -77,7 +77,7 @@ async function compareSetting(newSetting: TDeviceSetting, oldSetting: TDeviceSet
         if (newSetting.display_category === EDeviceType.UNKNOWN) {
             logger.info(`[compareSetting] device ${newSetting.mac} has change from ${oldSetting.display_category} to ${newSetting.display_category}`);
             const res = await deleteDevice(curDevice.serial_number);
-            logger.info(`[compareSetting] delete device id ${curDevice.serial_number} result => ${JSON.stringify(res)}`);
+            logger.info(`[compareSetting] delete device id: ${curDevice.serial_number} result: ${JSON.stringify(res)}`);
             return newSetting;
         }
 
@@ -94,10 +94,10 @@ async function compareSetting(newSetting: TDeviceSetting, oldSetting: TDeviceSet
         // 通道数产生变化了，应用新的设备数据
         logger.info(`[compareSetting] device ${newSetting.name}'channel has change from ${oldChannelLength} to ${newChannelLength}`);
         const res = await deleteDevice(curDevice.serial_number);
-        logger.info(`[compareSetting] delete device id ${curDevice.serial_number} result => ${JSON.stringify(res)}`);
+        logger.info(`[compareSetting] delete device id: ${curDevice.serial_number} result: ${JSON.stringify(res)}`);
         const params = generateIHostDevice([newSetting]);
         const syncRes = await syncDeviceToIHost(params);
-        logger.info(`[compareSetting] sync device id ${curDevice.serial_number} result => ${JSON.stringify(syncRes)}`);
+        logger.info(`[compareSetting] sync device id: ${curDevice.serial_number} result: ${JSON.stringify(syncRes)}`);
         return newSetting;
     }
 
@@ -132,7 +132,7 @@ export async function initByDiscoveryMsg(eventData: IMqttReceiveEvent<IDiscovery
 
             // 自动同步逻辑
             if (autoSync && curDeviceSetting.display_category !== EDeviceType.UNKNOWN) {
-                logger.info(`[initByDiscoveryMsg] autoSync is true`);
+                logger.info(`[initByDiscoveryMsg] autoSync is true, sync device now`);
                 const params = generateIHostDevice([curDeviceSetting]);
                 const syncRes = await syncDeviceToIHost(params);
                 if (_.isEmpty(syncRes.payload)) {
@@ -186,7 +186,6 @@ export async function initByDiscoveryMsg(eventData: IMqttReceiveEvent<IDiscovery
 
         if (curDeviceSetting.display_category === EDeviceType.SWITCH) {
             const publishRes = await mqttClient.publish(`${curDeviceSetting.mqttTopics.poll_topic}`, "");
-            logger.info(`[initByDiscoveryMsg] publish topic res => ${publishRes}`);
         }
     } catch (err) {
         logger.error(`[initByDiscoveryMsg] init discovery message error ${err}`);

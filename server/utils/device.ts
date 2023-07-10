@@ -43,7 +43,7 @@ export async function allTasmotaDeviceOnOrOffline(type: 'online' | 'offline') {
         }
     });
 
-    logger.info(`[allTasmotaDeviceOffline] all synced device ${JSON.stringify(syncedDevices)}`);
+    logger.info(`[allTasmotaDeviceOffline] all synced device ${syncedDevices.length}`);
 
 
     for (const devices of syncedDevices) {

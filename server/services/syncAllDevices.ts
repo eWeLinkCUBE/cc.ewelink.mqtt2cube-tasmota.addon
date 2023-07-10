@@ -37,8 +37,6 @@ export default async function syncAllDevices(req: Request, res: Response) {
             return true;
         })
 
-        logger.info(`[syncAllDevices] syncDevice => ${JSON.stringify(syncDevice)}`)
-
         if (syncDevice.length === 0) {
             logger.info(`[syncAllDevices] device to sync is null`);
             return res.json(toResponse(0, 'success', { successList: [] }));
@@ -55,12 +53,12 @@ export default async function syncAllDevices(req: Request, res: Response) {
         }
 
         if (syncRes?.payload.description === 'headers.Authorization is invalid') {
-            logger.info('[syncAllDevices] sync iHost device,iHost token useless');
+            logger.info('[syncAllDevices] sync iHost device, iHost token useless');
             return res.json(toResponse(602));
         }
 
         if (syncRes?.payload.type === 'INVALID_PARAMETERS') {
-            logger.error(`[syncAllDevices] sync device to iHost error params------------------ ${JSON.stringify(params)} ${JSON.stringify(syncRes)}`);
+            logger.error(`[syncAllDevices] sync device to iHost error params------------------ ${JSON.stringify(params)} error---------------${JSON.stringify(syncRes)}`);
             //参数错误
             return res.json(toResponse(500));
         }
