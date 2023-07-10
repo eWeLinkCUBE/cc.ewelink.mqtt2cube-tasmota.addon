@@ -71,7 +71,7 @@ async function _httpRequest<T>(api: string, params: any, httpMethod: EHttpMethod
         // 添加 sign 验证
         let headers = _createCommonHeader();
         const sign = _createSign(params);
-        headers['sign'] = sign;
+        headers['sign'] = `Sign ${sign}`;
 
         let result: any = {};
 
