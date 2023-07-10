@@ -5,6 +5,7 @@ import { deleteDevice, getIHostSyncDeviceList } from '../cube-api/api';
 import { getDeviceSettingList } from '../utils/tmp';
 import SSE from '../ts/class/sse';
 import ESseEvent from '../ts/enum/ESseEvent';
+import db from '../utils/db';
 
 
 /**
@@ -25,6 +26,7 @@ export default async function unSyncOneDevice(req: Request, res: Response) {
         const result = await getIHostSyncDeviceList()
         if (result.error === 401 || result.error === 400) {
             logger.error(`[unSyncOneDevice] iHost token invalid`)
+            await db.setDbValue('iHostToken', '');
             return res.json(toResponse(602));
         } else if (result.error !== 0) {
             logger.error(`[unSyncOneDevice] get iHost device list failed => ${JSON.stringify(result)}`)
@@ -49,6 +51,7 @@ export default async function unSyncOneDevice(req: Request, res: Response) {
         const deleteRes = await deleteDevice(curDevice.serial_number);
         if (deleteRes.error === 401 || deleteRes.error === 400) {
             logger.error(`[unSyncOneDevice] unSync deviceId ${willUnSyncDeviceId} failed. iHost token invalid`)
+            await db.setDbValue('iHostToken', '');
             return res.json(toResponse(602));
         } else if (deleteRes.error === 110000) {
             logger.error(`[unSyncOneDevice] unSync deviceId ${willUnSyncDeviceId} failed. Device is not exist in iHost`);

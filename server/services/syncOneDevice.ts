@@ -10,6 +10,7 @@ import { ISyncDeviceToIHostReq, getIHostSyncDeviceList, syncDeviceToIHost } from
 import { v4 as uuidv4 } from 'uuid';
 import { checkTasmotaDeviceInIHost } from '../utils/device';
 import ESseEvent from '../ts/enum/ESseEvent';
+import db from '../utils/db';
 
 
 
@@ -94,6 +95,7 @@ export default async function syncOneDevice(req: Request, res: Response) {
         const result = await getIHostSyncDeviceList();
         if (result.error === 401 || result.error === 400) {
             logger.error(`[syncOneDevice] iHost token invalid`)
+            await db.setDbValue('iHostToken', '');
             return res.json(toResponse(602));
         } else if (result.error !== 0) {
             logger.error(`[syncOneDevice] get iHost device list failed => ${JSON.stringify(result)}`)
@@ -119,6 +121,7 @@ export default async function syncOneDevice(req: Request, res: Response) {
 
         if (syncRes?.payload.description === 'headers.Authorization is invalid') {
             logger.info('[syncDevices] sync iHost device,iHost token useless-------------------------clear');
+            await db.setDbValue('iHostToken', '');
             return res.json(toResponse(602));
         }
 

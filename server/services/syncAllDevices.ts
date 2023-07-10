@@ -1,12 +1,12 @@
 import { Request, Response } from 'express';
 import { toResponse } from '../utils/error';
 import logger from '../log';
-import db from '../utils/db';
 import { getDeviceSettingList } from '../utils/tmp';
 import { getIHostSyncDeviceList, syncDeviceToIHost } from '../cube-api/api';
 import EDeviceType from '../ts/enum/EDeviceType';
 import { generateIHostDevice } from './syncOneDevice';
 import { checkTasmotaDeviceInIHost } from '../utils/device';
+import db from '../utils/db';
 
 
 /**
@@ -23,6 +23,7 @@ export default async function syncAllDevices(req: Request, res: Response) {
         const result = await getIHostSyncDeviceList();
         if (result.error === 401 || result.error === 400) {
             logger.error(`[syncAllDevices] iHost token invalid`)
+            await db.setDbValue('iHostToken', '');
             return res.json(toResponse(602));
         } else if (result.error !== 0) {
             logger.error(`[syncAllDevices] get iHost device list failed => ${JSON.stringify(result)}`)
@@ -54,6 +55,7 @@ export default async function syncAllDevices(req: Request, res: Response) {
 
         if (syncRes?.payload.description === 'headers.Authorization is invalid') {
             logger.info('[syncAllDevices] sync iHost device, iHost token useless');
+            await db.setDbValue('iHostToken', '');
             return res.json(toResponse(602));
         }
 
