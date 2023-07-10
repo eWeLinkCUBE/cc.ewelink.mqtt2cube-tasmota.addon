@@ -153,8 +153,8 @@ const save = async () => {
     }
     const isSuccess = await setMqttSettings(params);
     if (isSuccess) {
-        router.push({ name: ERouterName.DEVICE_LIST });
         useDeviceStore().updateIsMqttConnected(true);
+        router.push({ name: ERouterName.DEVICE_LIST });
     }
 };
 
