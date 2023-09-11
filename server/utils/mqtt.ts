@@ -230,7 +230,7 @@ async function handleSwitchPower(eventData: IMqttReceiveEvent<any>, deviceSettin
     const { mqttTopics: { state_power_on, state_power_off }, capabilities } = deviceSetting;
     const toggleCount = capabilities.filter(capability => capability.capability === 'toggle').length;
     const channelLength = toggleCount === 0 ? 1 : toggleCount;
-    logger.info(`[handleSwitchPower] channelLength => ${channelLength}, ${JSON.stringify(eventData)}`);
+    // logger.info(`[handleSwitchPower] channelLength => ${channelLength}, ${JSON.stringify(eventData)}`);
 
     const { topic } = eventData;
 

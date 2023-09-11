@@ -1,3 +1,4 @@
+import _ from 'lodash';
 import db from '../../utils/db';
 import { v4 as uuid } from 'uuid';
 import logger from '../../log';
@@ -45,7 +46,7 @@ class MQTT {
     async connect() {
         const { username = "", pwd = "", host, port } = this.initParams
         const mqttUrl = `mqtt://${host}:${port}`;
-        logger.error(`[mqtt] Connecting to MQTT server at ${mqttUrl}, ${JSON.stringify(this.initParams)}`);
+        logger.error(`[mqtt] Connecting to MQTT server at ${mqttUrl}`);
         let hasInit = false;
 
         return new Promise((resolve, reject) => {
@@ -67,7 +68,7 @@ class MQTT {
                 connectOption.password = pwd;
             }
 
-            logger.error(`[mqtt] connect option => ${JSON.stringify(connectOption)}`)
+            // logger.error(`[mqtt] connect option => ${JSON.stringify(connectOption)}`)
 
             this.client = mqtt.connect(mqttUrl, connectOption);
             // 设监听事件限制为无限
@@ -105,7 +106,7 @@ class MQTT {
 
 
             this.client.on('close', async () => {
-                logger.error(`[mqtt] ===================mqtt close===================`);
+                logger.error(`[mqtt] ===================mqtt close=================== ${this.client!.reconnecting}`);
                 // 清空所有旧缓存
                 updateDeviceSettingList([]);
 
@@ -137,7 +138,7 @@ class MQTT {
                 // 清空所有旧缓存
                 updateDeviceSettingList([]);
                 logger.info(`[mqtt] clear all cache ${JSON.stringify(getDeviceSettingList())}`);
-                
+
                 const mqttConnected = getMQTTConnected();
                 if (mqttConnected) {
                     await this.#connectedMqtt();
@@ -223,7 +224,7 @@ class MQTT {
      * @returns 
      */
     async onMessage(topic: string, payload: Buffer, packet: IPublishPacket) {
-        logger.error(`[mqtt] ===================mqtt receive topic ${topic}===================, `, topic, payload, payload.length, JSON.stringify(packet));
+        logger.error(`[mqtt] ===================mqtt receive topic ${topic}===================, `, topic, payload.length);
 
         if (this.publishedTopics.has(topic)) {
             logger.error("[mqtt] receive same topic as I send it => ", topic, this.publishedTopics);
@@ -342,13 +343,14 @@ export async function initMqtt(initParams: IMqttParams, failAndDisconnect = fals
         const newMqttClient = new MQTT(initParams);
         const res = await newMqttClient.connect();
         logger.error(`[initMqtt] init mqtt result => ${res}`);
+        // 连接失败也依然需要赋值，方便后面将其disconnect
+        mqttClient = newMqttClient;
         if (res !== 1) {
             logger.error(`[initMqtt] init mqtt broker error`);
             failAndDisconnect && newMqttClient.disconnect();
             return false;
         }
 
-        mqttClient = newMqttClient;
         logger.info(`[initMqtt] current mqttClient is => ${mqttClient}`);
         return true;
     } catch (error: any) {
@@ -364,7 +366,8 @@ export async function initMqtt(initParams: IMqttParams, failAndDisconnect = fals
  * @returns {*}  {(Promise<MQTT | null>)}
  */
 export async function getMQTTClient(): Promise<MQTT | null> {
-    if (mqttClient) {
+    // 因为initMqtt方法无论成功与否都赋值给mqttClient，此处必须判断mqtt连接无问题才能返回
+    if (mqttClient && !_.get(mqttClient, ['client', 'reconnecting'], false)) {
         logger.info(`[getMQTTClient] mqttClient exist`)
         return mqttClient;
     }
