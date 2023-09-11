@@ -2,7 +2,7 @@
 
 ## What is Tasmota add-on
 
-Tasmota add-on
+MQTT2CUBE-Tasmota supports synchronizing Tasmota devices to eWeLink CUBE control.
 
 ## Quick start
 
@@ -26,30 +26,12 @@ export const prodConf = {
 -   web frontend
 
 **web/config.ts**
-
 ```javascript
-const PROD_APPID = 'prodConf.auth.appId string';
-const PROD_SECRET = 'prodConf.auth.secret string';
+const APPID = 'prodConf.auth.appId string';
+const APP_SECRET = 'prodConf.auth.secret string';
 ```
 
-2. Generate eWeLink AppId and Secret by logging into [eWeLink Developer Platform](https://dev.ewelink.cc/) with your eWeLink account
-
-Place the generated AppId and Secret in the following file
-
-**server/config/prod.ts**
-
-```javascript
-export const prodConf = {
-    ...
-    coolKit: {
-        appId: '16-letter-or-number-combination',
-        appSecret: '32-letter-or-number-combination',
-    }
-    ...
-}
-```
-
-3. Package the project
+2. Package the project
 
 You can set the version of the image by editing the file **version**.
 
@@ -71,5 +53,3 @@ sh bin/build.sh
 -   5.1 Open the `eWeLink CUBE` docker configuration page
 -   5.2 Search for the above uploaded image name
 -   5.3 After successful installation and run it with the corresponding parameters, you can use it on `eWeLink CUBE`.
-
-Note: This image needs to scan the network of the host for obtaining the devices in the host LAN. So `--network` must be set to be **host** .
